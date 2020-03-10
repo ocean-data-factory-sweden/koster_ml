@@ -10,7 +10,8 @@ MAINTAINER Jannes Germishuys jurie.germishuys@combine.se
 RUN mkdir -p /usr/src/app
 WORKDIR /usr/src/app
 RUN git clone https://github.com/ocean-data-factory-sweden/koster_ml
-WORKDIR /usr/src/app/yolov3
+WORKDIR /usr/src/app/koster_ml
+RUN ls -l
 
 # Install dependencies (pip or conda)
 RUN pip install -U gsutil
@@ -42,10 +43,10 @@ RUN python3 -c "import cv2; print(cv2.getBuildInformation())"
 
 # Copy COCO
 #WORKDIR /usr/src/app
-#RUN ./yolov3/data/get_coco2017.sh
+#RUN ./koster_ml/data/get_coco2017.sh
 
 # Copy weights
-WORKDIR /usr/src/app/yolov3
+WORKDIR /usr/src/app/koster_ml
 RUN python3 -c "from models import *; \
 attempt_download('weights/yolov3.pt'); \
 attempt_download('weights/darknet53.conv.74'); \
