@@ -9,7 +9,7 @@ MAINTAINER Jannes Germishuys jurie.germishuys@combine.se
 # Create a working directory
 RUN mkdir -p /usr/src/app
 WORKDIR /usr/src/app
-RUN git clone https://github.com/ultralytics/yolov3
+RUN git clone https://github.com/ocean-data-factory-sweden/koster_ml
 WORKDIR /usr/src/app/yolov3
 
 # Install dependencies (pip or conda)
