@@ -27,6 +27,7 @@ storage.googleapis.com
 runs/*
 data/*
 koster/*
+!data/koster*
 !data/samples/zidane.jpg
 !data/samples/bus.jpg
 !data/coco.names
