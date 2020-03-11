@@ -259,7 +259,6 @@ class LoadImagesAndLabels(Dataset):  # for training/testing
     def __init__(self, path, img_size=416, batch_size=16, augment=False, hyp=None, rect=False, image_weights=False,
                  cache_labels=False, cache_images=False, single_cls=False):
         path = str(Path(path))  # os-agnostic
-        print(path)
         assert os.path.isfile(path), 'File not found %s. See %s' % (path, help_url)
         with open(path, 'r') as f:
             self.img_files = [x.replace('/', os.sep) for x in f.read().splitlines()  # os-agnostic
@@ -321,7 +320,6 @@ class LoadImagesAndLabels(Dataset):  # for training/testing
             self.labels = [np.zeros((0, 5))] * n
             extract_bounding_boxes = False
             create_datasubset = False
-            print(self.label_files)
             pbar = tqdm(self.label_files, desc='Caching labels')
             nm, nf, ne, ns, nd = 0, 0, 0, 0, 0  # number missing, found, empty, datasubset, duplicate
             for i, file in enumerate(pbar):
@@ -333,7 +331,6 @@ class LoadImagesAndLabels(Dataset):  # for training/testing
                     continue
 
                 if l.shape[0]:
-                    print('yes')
                     assert l.shape[1] == 5, '> 5 label columns: %s' % file
                     assert (l >= 0).all(), 'negative labels: %s' % file
                     assert (l[:, 1:] <= 1).all(), 'non-normalized or out of bounds coordinate labels: %s' % file
@@ -818,7 +815,6 @@ def imagelist2folder(path='data/coco_64img.txt'):  # from utils.datasets import 
     with open(path, 'r') as f:
         for line in f.read().splitlines():
             os.system('cp "%s" %s' % (line, path[:-4]))
-            print(line)
 
 
 def create_folder(path='./new_folder'):
