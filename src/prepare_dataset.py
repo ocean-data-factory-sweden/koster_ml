@@ -6,9 +6,6 @@ def prepare(data_path, percentage_test, out_path):
 
 	dataset_path = Path(data_path, 'images')
 
-	# Percentage of images to be used for the test set
-	percentage_test = 10;
-
 	# Create and/or truncate train.txt and test.txt
 	file_train = open(Path(data_path, 'train.txt'), 'w')
 	file_test = open(Path(data_path, 'test.txt'), 'w')
