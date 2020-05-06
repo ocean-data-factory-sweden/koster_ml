@@ -47,6 +47,15 @@ def clearImage(frame):
     return cv.merge(channels)
 
 
+def ProcFrames(proc_frame_func, frames_path):
+	start = time.time()
+	files = os.listdir(frames_path)
+	for f in files:
+		if f.endswith(('.png', '.jpg', '.jpeg', '.tiff', '.bmp', '.gif')):
+			proc_frame_func(cv.imread(str(Path(frames_path, f))))
+	end = time.time()
+	return (end-start) * 1000 / len(files), len(files)
+
 def ProcVid(proc_frame_func, vidPath):
     cap = cv.VideoCapture(vidPath)
     if cap.isOpened() == False:
@@ -69,19 +78,20 @@ def ProcVid(proc_frame_func, vidPath):
 def ProcFrameCuda(frame, size=(416, 416)):
     # frame_device.upload(frame)
     # change frame to frame_device below for gpu version
-    frame_device_small = cv.resize(frame, dsize=size)
+    frame_device_small = cv.resize(frame_device, dsize=size)
     fg_device = cv.cvtColor(frame_device_small, cv.COLOR_BGR2RGB)
     fg_device = clearImage(fg_device)
-    # fg_host = fg_device.download()
+    fg_host = fg_device.download()
     store_res = True
     if store_res:
-        gpu_res.append(np.copy(fg_device))
+        gpu_res.append(np.copy(fg_host))
 
 
 def main():
     "Handles argument parsing and launches the correct function."
     parser = argparse.ArgumentParser()
-    parser.add_argument("--vid_path", "-v", help="path to video file", type=str)
+    #parser.add_argument("--vid_path", "-v", help="path to video file", type=str)
+    parser.add_argument("--frames_path", "-fp", help="path to images", type=str, required=True)
     parser.add_argument(
         "--cols", "-c", "--cols", help="model input columns", type=int, default=416
     )
@@ -89,10 +99,10 @@ def main():
     args = parser.parse_args()
 
     # Run tests
-    gpu_time_0, n_frames = ProcVid(
-        partial(ProcFrameCuda, size=(args.cols, args.rows)), args.vid_path
+    gpu_time_0, n_frames = ProcFrames(
+        partial(ProcFrameCuda, size=(args.cols, args.rows)), args.frames_path
     )
-    print(f"GPU 0 (naive): {n_frames} frames, {gpu_time_0:.2f} ms/frame")
+    print(f"Processing performance: {n_frames} frames, {gpu_time_0:.2f} ms/frame")
 
 
 if __name__ == "__main__":

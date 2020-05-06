@@ -56,7 +56,7 @@ def track_objects(videoPath, class_ids, bboxes, start_frame, last_frame):
 
     # Extract relevant frame
     reader = Videos()
-    video = reader.read([videoPath], workers=8)
+    video = reader.read([videoPath])
     frame = video[:, start_frame, ...][0]
 
     # Initialize MultiTracker
