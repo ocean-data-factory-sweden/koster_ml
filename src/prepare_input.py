@@ -48,13 +48,14 @@ def clearImage(frame):
 
 
 def ProcFrames(proc_frame_func, frames_path):
-	start = time.time()
-	files = os.listdir(frames_path)
-	for f in files:
-		if f.endswith(('.png', '.jpg', '.jpeg', '.tiff', '.bmp', '.gif')):
-			proc_frame_func(cv.imread(str(Path(frames_path, f))))
-	end = time.time()
-	return (end-start) * 1000 / len(files), len(files)
+    start = time.time()
+    files = os.listdir(frames_path)
+    for f in files:
+        if f.endswith((".png", ".jpg", ".jpeg", ".tiff", ".bmp", ".gif")):
+            proc_frame_func(cv.imread(str(Path(frames_path, f))))
+    end = time.time()
+    return (end - start) * 1000 / len(files), len(files)
+
 
 def ProcVid(proc_frame_func, vidPath):
     cap = cv.VideoCapture(vidPath)
@@ -85,26 +86,3 @@ def ProcFrameCuda(frame, size=(416, 416)):
     store_res = True
     if store_res:
         gpu_res.append(np.copy(fg_host))
-
-
-def main():
-    "Handles argument parsing and launches the correct function."
-    parser = argparse.ArgumentParser()
-    #parser.add_argument("--vid_path", "-v", help="path to video file", type=str)
-    parser.add_argument("--frames_path", "-fp", help="path to images", type=str, required=True)
-    parser.add_argument(
-        "--cols", "-c", "--cols", help="model input columns", type=int, default=416
-    )
-    parser.add_argument("--rows", "-r", help="model input rows", type=int, default=416)
-    args = parser.parse_args()
-
-    # Run tests
-    gpu_time_0, n_frames = ProcFrames(
-        partial(ProcFrameCuda, size=(args.cols, args.rows)), args.frames_path
-    )
-    print(f"Processing performance: {n_frames} frames, {gpu_time_0:.2f} ms/frame")
-
-
-if __name__ == "__main__":
-    gpu_res = []
-    main()

@@ -43,7 +43,7 @@ def createTrackerByName(trackerType):
     return tracker
 
 
-def track_objects(videoPath, class_ids, bboxes, start_frame, last_frame):
+def track_objects(video, class_ids, bboxes, start_frame, last_frame):
 
     # Set video to load
     colors = [(randint(0, 255)) for i in bboxes]
@@ -55,9 +55,9 @@ def track_objects(videoPath, class_ids, bboxes, start_frame, last_frame):
     multiTracker = cv2.MultiTracker_create()
 
     # Extract relevant frame
-    reader = Videos()
-    video = reader.read([videoPath])
-    frame = video[:, start_frame, ...][0]
+    # reader = Videos()
+    # video = reader.read([videoPath])
+    frame = video[start_frame, ...]  # [0]
 
     # Initialize MultiTracker
     for bbox in bboxes:
@@ -67,7 +67,7 @@ def track_objects(videoPath, class_ids, bboxes, start_frame, last_frame):
     t = 0
     # Process video and track objects
     for current_frame in range(start_frame + 1, last_frame + 1):
-        frame = video[:, current_frame, ...][0]
+        frame = video[current_frame, ...]  # [0]
 
         # get updated location of objects in subsequent frames
         success, boxes = multiTracker.update(frame)

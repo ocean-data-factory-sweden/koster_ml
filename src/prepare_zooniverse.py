@@ -1,139 +1,53 @@
 # module imports
-import os, json, argparse
+import os, json, argparse, glob, pims
 import pandas as pd
 import numpy as np
 import frame_tracker
-from collections import OrderedDict
+from collections import OrderedDict, Counter
 from pathlib import Path
+from functools import partial
 from ast import literal_eval
-from scipy.spatial.distance import pdist
 
 from PIL import Image
 from mydia import Videos
 from db_utils import create_connection
+from prepare_input import ProcFrameCuda, ProcFrames
 
 # utility functions
+def process_frames(frames_path, size=(416, 416)):
+
+    # Run tests
+    gpu_time_0, n_frames = ProcFrames(partial(ProcFrameCuda, size=size), frames_path)
+    print(f"Processing performance: {n_frames} frames, {gpu_time_0:.2f} ms/frame")
 
 
-def get_id(conn, row):
+def split_frames(data_path, perc_test):
 
-    # Currently we discard sites that have no lat or lon coordinates, since site descriptions are not unique
-    # it becomes difficult to match this information otherwise
-    try:
-        gid = pd.read_sql_query(
-            f"SELECT id FROM species WHERE label=='{row['class_name']}'", conn
-        ).values[0][0]
-        print(gid)
-    except IndexError:
-        gid = 0
-    return gid
+    dataset_path = Path(data_path)
+    images_path = Path(dataset_path, "images")
 
+    # Create and/or truncate train.txt and test.txt
+    file_train = open(Path(data_path, "train.txt"), "w")
+    file_test = open(Path(data_path, "test.txt"), "w")
 
-def extract_frames(filenames, frame_numbers, out_path):
-    # read all videos
-    reader = Videos()
-    videos = reader.read(list(set(filenames)), workers=8)
-    m_names = [
-        os.path.basename(os.path.splitext(x)[0]) if isinstance(x, str) else x
-        for x in list(set(filenames))
-    ]
+    # Populate train.txt and test.txt
+    counter = 1
+    index_test = int(perc_test / 100 * len(os.listdir(images_path)))
+    for pathAndFilename in glob.iglob(os.path.join(images_path, "*.jpg")):
+        title, ext = os.path.splitext(os.path.basename(pathAndFilename))
 
-    for i in range(len(videos)):
-        Image.fromarray(videos[i, frame_numbers[i], ...]).save(
-            f"{out_path}/{m_names[i]}_frame_{frame_numbers[i]}.jpeg"
-        )
-
-    print("Frames extracted successfully")
-    return None
-
-
-def prepare(classifications_path):
-    df = pd.read_csv(classifications_path)
-    df = df[["classification_id", "annotations", "subject_data"]]
-
-    # Extract the video filename and annotation details
-    df["annotation"] = df.apply(
-        lambda x: (
-            [v["filename"] for k, v in json.loads(x.subject_data).items()],
-            literal_eval(x["annotations"])[0]["value"],
-        )
-        if len(literal_eval(x["annotations"])[0]["value"]) > 0
-        else None,
-        1,
-    )
-
-    # Convert annotation to format which the tracker expects
-    ds = [
-        OrderedDict(
-            {
-                "filename": i[0][0].split("_frame", 1)[0],
-                "class_name": i[1][0]["tool_label"],
-                "start_frame": int(i[0][0].split("_frame", 1)[1].replace(".jpg", "")),
-                "x": int(i[1][0]["x"]),
-                "y": int(i[1][0]["y"]),
-                "w": int(i[1][0]["width"]),
-                "h": int(i[1][0]["height"]),
-            }
-        )
-        for i in df.annotation
-        if i is not None
-    ]
-    return pd.DataFrame(ds)
-
-
-def bb_iou(boxA, boxB):
-
-    # Compute edges
-    boxA[2], boxA[3] = boxA[0] + boxA[2], boxA[1] + boxA[3]
-    boxB[2], boxB[3] = boxB[0] + boxB[2], boxB[1] + boxB[3]
-
-    # determine the (x, y)-coordinates of the intersection rectangle
-    xA = max(boxA[0], boxB[0])
-    yA = max(boxA[1], boxB[1])
-    xB = min(boxA[2], boxB[2])
-    yB = min(boxA[3], boxB[3])
-
-    # compute the area of intersection rectangle
-    interArea = abs(max((xB - xA, 0)) * max((yB - yA), 0))
-    if interArea == 0:
-        return 0
-    # compute the area of both the prediction and ground-truth
-    # rectangles
-    boxAArea = abs((boxA[2] - boxA[0]) * (boxA[3] - boxA[1]))
-    boxBArea = abs((boxB[2] - boxB[0]) * (boxB[3] - boxB[1]))
-
-    # compute the intersection over union by taking the intersection
-    # area and dividing it by the sum of prediction + ground-truth
-    # areas - the intersection area
-    iou = interArea / float(boxAArea + boxBArea - interArea)
-
-    # return the intersection over union value
-    return iou
-
-
-def filter_bboxes(bboxes, agg="mean", threshold=0.2):
-    # If there is only one annotation, we take it as the truth (at least for testing)
-    if len(bboxes) <= 1:
-        return bboxes
-    dm = pdist(bboxes, bb_iou)
-    dm.resize((len(dm), len(dm)), refcheck=False)
-    dm = np.fliplr(dm)
-    dm = dm + dm.T - np.diag(np.diag(dm))
-    valid = np.argwhere(dm.mean(axis=1) >= threshold)
-    if agg == "mean":
-        return bboxes[valid].mean(axis=0)
+        if counter == index_test + 1:
+            counter = 1
+            file_test.write(pathAndFilename + "\n")
+        else:
+            file_train.write(pathAndFilename + "\n")
+            counter = counter + 1
+    print("Training and test set completed")
 
 
 def main():
     "Handles argument parsing and launches the correct function."
     parser = argparse.ArgumentParser()
-    # parser.add_argument(
-    #    "--w2_path",
-    #    "-w2",
-    #    help="output from workflow 2 in Zooniverse",
-    #    type=str,
-    #    required=True,
-    # )
     parser.add_argument(
         "--out_path",
         "-o",
@@ -174,35 +88,30 @@ def main():
     else:
         species_ref = pd.read_sql_query(f"SELECT id FROM species", conn)["id"].tolist()
 
-    # train_rows = pd.read_sql_query(f"SELECT * FROM agg_annotations_frame WHERE species_id IN {species_ref}", conn)
-    # test using cv
-    train_rows = prepare(
-        "../../../database/koster_lab_development/data_example/workflow2_classifications.csv"
+    train_rows = pd.read_sql_query(
+        f"SELECT b.filename, b.frame_number, a.species_id, a.x_position, a.y_position, a.width, a.height FROM \
+        agg_annotations_frame AS a WHERE species_id IN {species_ref} LEFT JOIN subjects AS b ON a.subject_id=b.id",
+        conn,
     )
+
+    # Add dataset metadata to dataset table in koster db
 
     bboxes = {}
     tboxes = {}
     new_rows = []
 
+    video_dict = {i: pims.Video(i) for i in df["filename"].unique().tolist()}
+
     for name, group in train_rows.groupby(["filename", "class_name", "start_frame"]):
 
         filename, class_name, start_frame = name
-
-        # temp for testing
-        filename = "../data/data_example/test_video.mp4"
-
-        # Filter bboxes using IOU metric (essentially a consensus metric)
-        # Keep only bboxes where mean overlap exceeds this threshold
-        group = filter_bboxes(
-            bboxes=[np.array((i[3], i[4], i[5], i[6])) for i in group.values]
-        )
 
         # Track intermediate frames
         bboxes[name], tboxes[name] = [], []
         bboxes[name].extend(tuple(i) for i in group)
         tboxes[name].extend(
             frame_tracker.track_objects(
-                filename, class_name, bboxes[name], start_frame, 250
+                video_dict[name[0]], class_name, bboxes[name], start_frame, 250
             )
         )
 
@@ -225,9 +134,11 @@ def main():
 
         if not os.path.isdir(args.out_path):
             os.mkdir(args.out_path)
+            os.mkdir(Path(args.out_path, "images"))
+            os.mkdir(Path(args.out_path, "labels"))
 
         if args.out_format == "yolo":
-            open(f"{args.out_path}/{file_base}_frame_{name[1]}.txt", "w").write(
+            open(f"{args.out_path}/labels/{file_base}_frame_{name[1]}.txt", "w").write(
                 "\n".join(
                     [
                         "{:s} {:.6f} {:.6f} {:.6f} {:.6f}".format(
@@ -242,9 +153,19 @@ def main():
                 )
             )
 
-    extract_frames(
-        txt_rows.obj["filename"].tolist(), txt_rows.obj["frame"].tolist(), args.out_path
-    )
+        # Save frames to image files
+        Image.fromarray(video_dict[name[0]][name[1], ...]).save(
+            f"{args.out_path}/images/{file_base}_frame_{name[1]}.jpg"
+        )
+
+    print("Frames extracted successfully")
+
+    # Clear images
+    gpu_res = []
+    process_frames(args.out_path, size=(416, 416))
+
+    # Create training/test sets
+    split_frames(args.out_path, 0.2)
 
 
 if __name__ == "__main__":
