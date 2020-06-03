@@ -1,12 +1,13 @@
 # pip install -U -r requirements.txt
 numpy
 opencv-python >= 4.1
+opencv-contrib-python
 torch >= 1.4
 matplotlib
 pycocotools
 tqdm
 pillow
-pims
+-e git+https://github.com/soft-matter/pims.git#egg=PIMS
 av
 
 # Nvidia Apex (optional) for mixed precision training --------------------------

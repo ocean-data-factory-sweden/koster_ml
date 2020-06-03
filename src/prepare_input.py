@@ -52,7 +52,8 @@ def ProcFrames(proc_frame_func, frames_path):
     files = os.listdir(frames_path)
     for f in files:
         if f.endswith((".png", ".jpg", ".jpeg", ".tiff", ".bmp", ".gif")):
-            proc_frame_func(cv.imread(str(Path(frames_path, f))))
+            new_frame = proc_frame_func(cv.imread(str(Path(frames_path, f))))
+            cv.imwrite(str(Path(frames_path, f)), new_frame)
     end = time.time()
     return (end - start) * 1000 / len(files), len(files)
 
@@ -79,10 +80,11 @@ def ProcVid(proc_frame_func, vidPath):
 def ProcFrameCuda(frame, size=(416, 416)):
     # frame_device.upload(frame)
     # change frame to frame_device below for gpu version
-    frame_device_small = cv.resize(frame_device, dsize=size)
+    frame_device_small = cv.resize(frame, dsize=size)
     fg_device = cv.cvtColor(frame_device_small, cv.COLOR_BGR2RGB)
     fg_device = clearImage(fg_device)
-    fg_host = fg_device.download()
-    store_res = True
-    if store_res:
-        gpu_res.append(np.copy(fg_host))
+    fg_host = fg_device  # .download()
+    # store_res = True
+    # if store_res:
+    #    gpu_res.append(np.copy(fg_host))
+    return fg_host
