@@ -9,7 +9,6 @@ from functools import partial
 from ast import literal_eval
 
 from PIL import Image
-from mydia import Videos
 from db_utils import create_connection
 from prepare_input import ProcFrameCuda, ProcFrames
 
@@ -77,6 +76,14 @@ def main():
         default=r"koster_lab.db",
         required=True,
     )
+    parser.add_argument(
+        "-m",
+        "--movie_dir",
+        type=str,
+        help="the directory of movie files",
+        default=r"/uploads/",
+        required=True,
+    )
     args = parser.parse_args()
 
     conn = create_connection(args.db_path)
@@ -90,7 +97,7 @@ def main():
 
     train_rows = pd.read_sql_query(
         f"SELECT b.filename, b.frame_number, a.species_id, a.x_position, a.y_position, a.width, a.height FROM \
-        agg_annotations_frame AS a WHERE species_id IN {species_ref} LEFT JOIN subjects AS b ON a.subject_id=b.id",
+        agg_annotations_frame AS a LEFT JOIN subjects AS b ON a.subject_id=b.id WHERE species_id IN {species_ref}",
         conn,
     )
 
@@ -100,9 +107,16 @@ def main():
     tboxes = {}
     new_rows = []
 
-    video_dict = {i: pims.Video(i) for i in df["filename"].unique().tolist()}
+    train_rows["movie_path"] = (
+    args.movie_dir
+    + "/"
+    + train_rows["filename"].apply(
+        lambda x: os.path.basename(x.rsplit("_frame_")[0]) + ".mov"
+    )
 
-    for name, group in train_rows.groupby(["filename", "class_name", "start_frame"]):
+    video_dict = {i: pims.Video(i) for i in train_rows["filename"].unique().tolist()}
+
+    for name, group in train_rows.groupby(["filename", "class_name", "start_frame", "movie_path"]):
 
         filename, class_name, start_frame = name
 
@@ -111,7 +125,7 @@ def main():
         bboxes[name].extend(tuple(i) for i in group)
         tboxes[name].extend(
             frame_tracker.track_objects(
-                video_dict[name[0]], class_name, bboxes[name], start_frame, 250
+                video_dict[name[3]], class_name, bboxes[name], start_frame, 250
             )
         )
 

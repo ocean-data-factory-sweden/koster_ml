@@ -1,7 +1,6 @@
 import sys
 import cv2
 from random import randint
-from mydia import Videos
 
 trackerTypes = [
     "BOOSTING",
@@ -57,7 +56,7 @@ def track_objects(video, class_ids, bboxes, start_frame, last_frame):
     # Extract relevant frame
     # reader = Videos()
     # video = reader.read([videoPath])
-    frame = video[start_frame, ...]  # [0]
+    frame = video[start_frame]  # [0]
 
     # Initialize MultiTracker
     for bbox in bboxes:
@@ -67,7 +66,7 @@ def track_objects(video, class_ids, bboxes, start_frame, last_frame):
     t = 0
     # Process video and track objects
     for current_frame in range(start_frame + 1, last_frame + 1):
-        frame = video[current_frame, ...]  # [0]
+        frame = video[current_frame]  # [0]
 
         # get updated location of objects in subsequent frames
         success, boxes = multiTracker.update(frame)
