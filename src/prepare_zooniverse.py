@@ -153,28 +153,53 @@ def main():
         )
 
         for box in bboxes[named_tuple]:
-            new_rows.append((filename, species_id, frame_number, movie_path,) + box)
-        for box in tboxes[named_tuple]:
-            print("tracked box", box)
             new_rows.append(
-                (filename, species_id, frame_number + box[0], movie_path) + box[1:]
+                (
+                    filename,
+                    species_id,
+                    frame_number,
+                    movie_path,
+                    video_dict[name[3]][frame_number].shape[1],
+                    video_dict[name[3]][frame_number].shape[0],
+                )
+                + box
+            )
+        for box in tboxes[named_tuple]:
+            new_rows.append(
+                (
+                    filename,
+                    species_id,
+                    frame_number + box[0],
+                    movie_path,
+                    video_dict[name[3]][frame_number].shape[1],
+                    video_dict[name[3]][frame_number].shape[0],
+                )
+                + box[1:]
             )
 
     # Export txt files
     full_rows = pd.DataFrame(
         new_rows,
-        columns=["filename", "species_id", "frame", "movie_path", "x", "y", "w", "h"],
+        columns=[
+            "filename",
+            "species_id",
+            "frame",
+            "movie_path",
+            "f_w",
+            "f_h",
+            "x",
+            "y",
+            "w",
+            "h",
+        ],
     )
 
-    txt_rows = full_rows.groupby(["filename", "frame", "movie_path"])
-
-    for name, groups in txt_rows:
+    for name, groups in full_rows.groupby(["filename", "frame", "movie_path"]):
 
         file, ext = os.path.splitext(name[2])
         file_base = os.path.basename(file)
 
         if not os.path.isdir(args.out_path):
-            os.mkdir(args.out_path)
             os.mkdir(Path(args.out_path, "images"))
             os.mkdir(Path(args.out_path, "labels"))
 
@@ -184,10 +209,10 @@ def main():
                     [
                         "{} {:.6f} {:.6f} {:.6f} {:.6f}".format(
                             i[1],
-                            (i[4] + i[6] / 2) / 416,
-                            (i[5] + i[7] / 2) / 416,
-                            i[6] / 416,
-                            i[7] / 416,
+                            (i[6] + i[8] / 2) / i[4],
+                            (i[7] + i[9] / 2) / i[5],
+                            i[8] / i[4],
+                            i[9] / i[5],
                         )
                         for i in groups.values
                     ]
