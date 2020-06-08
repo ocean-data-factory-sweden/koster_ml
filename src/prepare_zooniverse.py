@@ -200,19 +200,22 @@ def main():
         file_base = os.path.basename(file)
 
         if not os.path.isdir(args.out_path):
-            os.mkdir(Path(args.out_path, "images"))
-            os.mkdir(Path(args.out_path, "labels"))
+            os.mkdir(Path(args.out_path))
+
+        # Set up directory structure
+        os.mkdir(Path(args.out_path, "images"))
+        os.mkdir(Path(args.out_path, "labels"))
 
         if args.out_format == "yolo":
             open(f"{args.out_path}/labels/{file_base}_frame_{name[1]}.txt", "w").write(
                 "\n".join(
                     [
                         "{} {:.6f} {:.6f} {:.6f} {:.6f}".format(
-                            i[1],
-                            (i[6] + i[8] / 2) / i[4],
-                            (i[7] + i[9] / 2) / i[5],
-                            i[8] / i[4],
-                            i[9] / i[5],
+                            0,#i[1],
+                            min((i[6] + i[8] / 2) / i[4], 1.0),
+                            min((i[7] + i[9] / 2) / i[5], 1.0),
+                            min(i[8] / i[4], 1.0),
+                            min(i[9] / i[5], 1.0),
                         )
                         for i in groups.values
                     ]
