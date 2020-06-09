@@ -202,17 +202,18 @@ def main():
         ],
     )
 
+    # Create output folder
+    if not os.path.isdir(args.out_path):
+        os.mkdir(Path(args.out_path))
+
+    # Set up directory structure
+    os.mkdir(Path(args.out_path, "images"))
+    os.mkdir(Path(args.out_path, "labels"))
+
     for name, groups in full_rows.groupby(["filename", "frame", "movie_path"]):
 
         file, ext = os.path.splitext(name[2])
         file_base = os.path.basename(file)
-
-        if not os.path.isdir(args.out_path):
-            os.mkdir(Path(args.out_path))
-
-        # Set up directory structure
-        os.mkdir(Path(args.out_path, "images"))
-        os.mkdir(Path(args.out_path, "labels"))
 
         if args.out_format == "yolo":
             open(f"{args.out_path}/labels/{file_base}_frame_{name[1]}.txt", "w").write(
