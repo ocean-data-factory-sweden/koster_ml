@@ -1,5 +1,5 @@
 # module imports
-import os, json, argparse, glob, pims
+import os, json, argparse, glob, pims, random
 import pandas as pd
 import numpy as np
 import frame_tracker
@@ -28,20 +28,28 @@ def split_frames(data_path, perc_test):
 
     # Create and/or truncate train.txt and test.txt
     file_train = open(Path(data_path, "train.txt"), "w")
+    file_valid = open(Path(data_path, "valid.txt"), "w")
     file_test = open(Path(data_path, "test.txt"), "w")
+    
+    files = glob.iglob(os.path.join(images_path, "*.jpg"))
+    random.seed(777)
+    random.shuffle(files)
+
+    test_array = random.sample(range(files), k=int(perc_test * len(files)))
 
     # Populate train.txt and test.txt
-    counter = 1
-    index_test = int(perc_test / 100 * len(os.listdir(images_path)))
-    for pathAndFilename in glob.iglob(os.path.join(images_path, "*.jpg")):
+    counter = 0
+    for pathAndFilename in files:
         title, ext = os.path.splitext(os.path.basename(pathAndFilename))
 
-        if counter == index_test + 1:
-            counter = 1
+        if counter in test_array:
             file_test.write(pathAndFilename + "\n")
         else:
-            file_train.write(pathAndFilename + "\n")
-            counter = counter + 1
+            if random.uniform(0,1) <= 0.4:
+                file_train.write(pathAndFilename + "\n")
+            else:
+                file_valid.write(pathAndFilename + "\n")
+        counter = counter + 1
     print("Training and test set completed")
 
 
@@ -223,7 +231,7 @@ def main():
             )
 
         # Save frames to image files
-        Image.fromarray(video_dict[name[2]][name[1]]).save(
+        Image.fromarray(video_dict[name[2]][name[1]][:, :, [2,1,0]]).save(
             f"{args.out_path}/images/{file_base}_frame_{name[1]}.jpg"
         )
 
