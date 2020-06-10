@@ -1,5 +1,5 @@
 # module imports
-import os, json, argparse, glob, pims, random
+import os, json, argparse, glob, pims, random, shutil
 import pandas as pd
 import numpy as np
 import frame_tracker
@@ -31,7 +31,7 @@ def split_frames(data_path, perc_test):
     file_valid = open(Path(data_path, "valid.txt"), "w")
     file_test = open(Path(data_path, "test.txt"), "w")
     
-    files = glob.iglob(os.path.join(images_path, "*.jpg"))
+    files = list(glob.iglob(os.path.join(images_path, "*.jpg")))
     random.seed(777)
     random.shuffle(files)
 
@@ -172,6 +172,7 @@ def main():
                 )
                 + box
             )
+        
         for box in tboxes[named_tuple]:
             new_rows.append(
                 (
@@ -207,8 +208,17 @@ def main():
         os.mkdir(Path(args.out_path))
 
     # Set up directory structure
-    os.mkdir(Path(args.out_path, "images"))
-    os.mkdir(Path(args.out_path, "labels"))
+    img_dir = Path(args.out_path, "images")
+    label_dir = Path(args.out_path, "labels")
+    
+    if not os.path.isdir(img_dir):
+        os.mkdir(img_dir)
+    else: shutil.rmtree(img_dir)
+
+    if not os.path.isdir(label_dir):
+        os.mkdir(label_dir)
+    else: shutil.rmtree(label_dir)
+
 
     for name, groups in full_rows.groupby(["filename", "frame", "movie_path"]):
 
