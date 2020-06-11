@@ -35,7 +35,7 @@ def split_frames(data_path, perc_test):
     random.seed(777)
     random.shuffle(files)
 
-    test_array = random.sample(range(files), k=int(perc_test * len(files)))
+    test_array = random.sample(range(len(files)), k=int(perc_test * len(files)))
 
     # Populate train.txt and test.txt
     counter = 0
@@ -213,12 +213,15 @@ def main():
     
     if not os.path.isdir(img_dir):
         os.mkdir(img_dir)
-    else: shutil.rmtree(img_dir)
+    else: 
+        shutil.rmtree(img_dir)
+        os.mkdir(img_dir)
 
     if not os.path.isdir(label_dir):
         os.mkdir(label_dir)
-    else: shutil.rmtree(label_dir)
-
+    else: 
+        shutil.rmtree(label_dir)
+        os.mkdir(label_dir)
 
     for name, groups in full_rows.groupby(["filename", "frame", "movie_path"]):
 
