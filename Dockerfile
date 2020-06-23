@@ -24,16 +24,18 @@ RUN cd ~/ &&\
     mkdir build && \
     cd build && \
     cmake -D CMAKE_BUILD_TYPE=RELEASE \
-        -DWITH_OPENGL=ON \
+    	-D CUDA_ARCH_PTX='' \
+    	-D CUDA_ARCH_BIN=6.1 \
+    	-D BUILD_OPENCV_PYTHON3=ON \
+    	-D PYTHON3_EXECUTABLE=/opt/conda/bin/python \
+    	-D PYTHON3_INCLUDE_PATH=/opt/conda/include/python3.6m \
+    	-D PYTHON3_LIBRARIES=/opt/conda/lib/python3.6/site-packages \
+    	-D WITH_GSTREAMER=ON \
+    	-D WITH_FFMPEG=OFF \
         -D WITH_CUDA=ON \
         -D ENABLE_FAST_MATH=1 \
         -D CUDA_FAST_MATH=1 \
         -D WITH_CUBLAS=1 \
-        -DFORCE_VTK=ON \
-        -DWITH_TBB=ON \
-        -DWITH_GDAL=ON \
-        -DWITH_XINE=ON \
-        -DBUILD_EXAMPLES=ON \
         -D OPENCV_EXTRA_MODULES_PATH=~/opencv_contrib/modules \
         .. && \
     make -j"$(nproc)" && \
