@@ -30,7 +30,7 @@ def split_frames(data_path, perc_test):
     file_train = open(Path(data_path, "train.txt"), "w")
     file_valid = open(Path(data_path, "valid.txt"), "w")
     file_test = open(Path(data_path, "test.txt"), "w")
-    
+
     files = list(glob.iglob(os.path.join(images_path, "*.jpg")))
     random.seed(777)
     random.shuffle(files)
@@ -45,7 +45,7 @@ def split_frames(data_path, perc_test):
         if counter in test_array:
             file_test.write(pathAndFilename + "\n")
         else:
-            if random.uniform(0,1) <= 0.4:
+            if random.uniform(0, 1) <= (1 - perc_test) / 2:
                 file_train.write(pathAndFilename + "\n")
             else:
                 file_valid.write(pathAndFilename + "\n")
@@ -93,6 +93,15 @@ def main():
         default=r"/uploads/",
         required=True,
     )
+    parser.add_argument(
+        "-pt",
+        "--perc_test",
+        type=float,
+        help="proportion of data to use for testing",
+        default=0.2,
+        required=True,
+    )
+
     args = parser.parse_args()
 
     conn = create_connection(args.db_path)
@@ -172,7 +181,7 @@ def main():
                 )
                 + box
             )
-        
+
         for box in tboxes[named_tuple]:
             new_rows.append(
                 (
@@ -210,30 +219,29 @@ def main():
     # Set up directory structure
     img_dir = Path(args.out_path, "images")
     label_dir = Path(args.out_path, "labels")
-    
+
     if not os.path.isdir(img_dir):
         os.mkdir(img_dir)
-    else: 
+    else:
         shutil.rmtree(img_dir)
         os.mkdir(img_dir)
 
-    if not os.path.isdir(label_dir):
-        os.mkdir(label_dir)
-    else: 
+    if os.path.isdir(label_dir):
         shutil.rmtree(label_dir)
+
         os.mkdir(label_dir)
 
     for name, groups in full_rows.groupby(["filename", "frame", "movie_path"]):
 
         file, ext = os.path.splitext(name[2])
         file_base = os.path.basename(file)
-
+        # Added condition to avoid bounding boxes outside of maximum size of frame + added 0 class id when working with single class
         if args.out_format == "yolo":
             open(f"{args.out_path}/labels/{file_base}_frame_{name[1]}.txt", "w").write(
                 "\n".join(
                     [
                         "{} {:.6f} {:.6f} {:.6f} {:.6f}".format(
-                            0,#i[1],
+                            0,  # i[1],
                             min((i[6] + i[8] / 2) / i[4], 1.0),
                             min((i[7] + i[9] / 2) / i[5], 1.0),
                             min(i[8] / i[4], 1.0),
@@ -245,18 +253,17 @@ def main():
             )
 
         # Save frames to image files
-        Image.fromarray(video_dict[name[2]][name[1]][:, :, [2,1,0]]).save(
+        Image.fromarray(video_dict[name[2]][name[1]][:, :, [2, 1, 0]]).save(
             f"{args.out_path}/images/{file_base}_frame_{name[1]}.jpg"
         )
 
     print("Frames extracted successfully")
 
     # Clear images
-    # gpu_res = []
     process_frames(args.out_path + "/images", size=(416, 416))
 
     # Create training/test sets
-    split_frames(args.out_path, 0.2)
+    split_frames(args.out_path, args.perc_test)
 
 
 if __name__ == "__main__":

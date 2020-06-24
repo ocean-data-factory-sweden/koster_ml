@@ -1,5 +1,4 @@
-classes = 7
-train  = ../koster/train.txt 
-valid  = ../koster/test.txt
-names = ./data/koster.names
-backup = /backup/
+classes = 1
+train  = /data/input/train.txt 
+valid  = /data/input/valid.txt
+names = data/koster.names
