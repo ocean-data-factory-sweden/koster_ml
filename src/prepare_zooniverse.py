@@ -220,16 +220,15 @@ def main():
     img_dir = Path(args.out_path, "images")
     label_dir = Path(args.out_path, "labels")
 
-    if not os.path.isdir(img_dir):
-        os.mkdir(img_dir)
-    else:
+    if os.path.isdir(img_dir):
         shutil.rmtree(img_dir)
-        os.mkdir(img_dir)
+
+    os.mkdir(img_dir)
 
     if os.path.isdir(label_dir):
         shutil.rmtree(label_dir)
 
-        os.mkdir(label_dir)
+    os.mkdir(label_dir)
 
     for name, groups in full_rows.groupby(["filename", "frame", "movie_path"]):
 
