@@ -43,9 +43,7 @@ RUN ls -l
 #    echo 'ln /dev/null /dev/raw1394' >> ~/.bashrc 
 
 # Install dependencies (pip or conda)
-RUN pip install --upgrade gsutil
 RUN pip install -U -r requirements.txt
+RUN pip install --upgrade gsutil
 RUN pip install --upgrade torchvision
-RUN pip install fastapi
-RUN pip install uvicorn
 WORKDIR /usr/src/app/koster_ml
