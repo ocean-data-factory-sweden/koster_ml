@@ -11,12 +11,12 @@ app = FastAPI()
 
 class KosterModel():
 
-        def __init__(self, media_path):
+        def __init__(self):
             with torch.no_grad():
                 self.img_size = (320, 192) if ONNX_EXPORT else 416  # (320, 192) or (416, 256) or (608, 352) for (height, width)
-                self.out, self.source, self.weights, self.half, self.view_img, self.save_txt = '/data/testapi', media_path, 'weights/last.pt', True, False, True
-                self.webcam = self.source == '0' or self.source.startswith('rtsp') or self.source.startswith('http') or self.source.endswith('.txt') or self.source.startswith('https')
-                self.names, self.conf_thres, self.classes, self.agnostic_nms, self.iou_thres = 'data/koster.names', 0.3, 1, True, 0.6
+                self.out, self.weights, self.half, self.view_img, self.save_txt = '/data/testapi', '/data/weights/last.pt', False, False, True
+                self.webcam = False #self.source == '0' or self.source.startswith('rtsp') or self.source.startswith('http') or self.source.endswith('.txt') or self.source.startswith('https')
+                self.names, self.conf_thres, self.classes, self.agnostic_nms, self.iou_thres = 'data/koster.names', 0.3, None, False, 0.6
 
                 # Initialize
                 self.device = torch_utils.select_device(device='cpu' if ONNX_EXPORT else '0')
@@ -28,7 +28,7 @@ class KosterModel():
                 self.model = Darknet('cfg/yolov3-spp-1cls.cfg', self.img_size)
 
                 # Load weights
-                attempt_download(self.weights)
+                #attempt_download(self.weights)
                 if self.weights.endswith('.pt'):  # pytorch format
                     self.model.load_state_dict(torch.load(self.weights, map_location=self.device)['model'])
                 else:  # darknet format
@@ -68,7 +68,7 @@ class KosterModel():
 
 
         def detect(self, save_img=False):
-
+            boxes = []
             with torch.no_grad():
                 # Set Dataloader
                 vid_path, vid_writer = None, None
@@ -126,6 +126,7 @@ class KosterModel():
 
                             # Write results
                             for *xyxy, conf, cls in det:
+                                boxes.append(xyxy)
                                 if self.save_txt:  # Write to file
                                     with open(save_path + '.txt', 'a') as file:
                                         file.write(('%g ' * 6 + '\n') % (*xyxy, cls, conf))
@@ -166,6 +167,7 @@ class KosterModel():
                         os.system('open ' + self.out + ' ' + save_path)
 
                 print('Done. (%.3fs)' % (time.time() - t0))
+                return im0
 
 @app.get("/ping")
 def ping():
@@ -174,7 +176,8 @@ def ping():
 
 @app.get("/predict/{media_path:path}")
 async def predict(media_path: str):
-    m = KosterModel(media_path)
+    m = KosterModel()
+    m.source = media_path
     pred = m.detect()
     return {"message": str(pred)}
 
