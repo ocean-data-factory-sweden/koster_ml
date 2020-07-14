@@ -78,12 +78,12 @@ def ProcVid(proc_frame_func, vidPath):
 
 
 def ProcFrameCuda(frame, size=(416, 416)):
-    # frame_device.upload(frame)
+    frame_device.upload(frame)
     # change frame to frame_device below for gpu version
-    frame_device_small = cv.resize(frame, dsize=size)
-    fg_device = cv.cvtColor(frame_device_small, cv.COLOR_BGR2RGB)
-    fg_device = clearImage(fg_device)
-    fg_host = fg_device  # .download()
+    frame_device_small = cv.cuda.resize(frame_device, dsize=size)
+    fg_device = cv.cuda.cvtColor(frame_device_small, cv.COLOR_BGR2RGB)
+    fg_host = fg_device.download()
+    fg_host = clearImage(fg_host)
     # store_res = True
     # if store_res:
     #    gpu_res.append(np.copy(fg_host))
