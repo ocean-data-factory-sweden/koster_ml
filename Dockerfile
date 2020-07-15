@@ -62,7 +62,10 @@ RUN apt-get update &&\
 RUN rm -rf ~/opencv* 
 
 # Set new environment reference
-ENV PYTHONPATH=/opt/conda/lib/python3.6/site-packages/cv2:$PYTHONPATH
+ENV PYTHONPATH "/usr/local/lib/python3.6/site-packages/cv2/python-3.6/:${PYTHONPATH}"
+
+# Confirm path
+RUN echo $PYTHONPATH
 
 # Install dependencies (pip or conda)
 RUN pip install -U -r requirements.txt
