@@ -74,8 +74,9 @@ def main():
         "--class_list",
         "-c",
         help="list of classes to use for dataset",
-        type=list,
-        default=[],
+        type=str,
+        nargs="*",
+        default="",
     )
     parser.add_argument(
         "-db",
@@ -107,18 +108,31 @@ def main():
     conn = create_connection(args.db_path)
 
     if len(args.class_list) > 0:
-        species_ref = pd.read_sql_query(
-            f"SELECT id FROM species WHERE label IN {args.class_list}", conn
+        if len(args.class_list) == 1:
+            species_ref = pd.read_sql_query(
+            f"SELECT id FROM species WHERE label=='{args.class_list[0]}'", conn
+        )["id"].tolist()
+        else:
+            species_ref = pd.read_sql_query(
+            f"SELECT id FROM species WHERE label IN {tuple(args.class_list)}", conn
         )["id"].tolist()
     else:
         species_ref = pd.read_sql_query(f"SELECT id FROM species", conn)["id"].tolist()
 
-    train_rows = pd.read_sql_query(
-        f"SELECT b.filename, b.frame_number, a.species_id, a.x_position, a.y_position, a.width, a.height FROM \
-        agg_annotations_frame AS a LEFT JOIN subjects AS b ON a.subject_id=b.id WHERE species_id IN {tuple(species_ref)}",
-        conn,
-    )
-
+    if len(args.class_list) == 1:
+        train_rows = pd.read_sql_query(
+            f"SELECT b.filename, b.frame_number, a.species_id, a.x_position, a.y_position, a.width, a.height FROM \
+            agg_annotations_frame AS a LEFT JOIN subjects AS b ON a.subject_id=b.id WHERE \
+            species_id=='{tuple(species_ref)[0]}'",
+            conn,
+        )
+    else:
+        train_rows = pd.read_sql_query(
+            f"SELECT b.filename, b.frame_number, a.species_id, a.x_position, a.y_position, a.width, a.height FROM \
+            agg_annotations_frame AS a LEFT JOIN subjects AS b ON a.subject_id=b.id WHERE species_id IN {tuple(species_ref)}",
+            conn,
+        )
+        
     # Add dataset metadata to dataset table in koster db
 
     bboxes = {}
@@ -263,7 +277,6 @@ def main():
 
     # Create training/test sets
     split_frames(args.out_path, args.perc_test)
-
 
 if __name__ == "__main__":
     main()
