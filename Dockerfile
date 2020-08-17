@@ -6,15 +6,6 @@ FROM nvcr.io/nvidia/pytorch:20.02-py3
 
 MAINTAINER Jannes Germishuys jurie.germishuys@combine.se
 
-# Create a working directory
-RUN mkdir -p /usr/src/app
-WORKDIR /usr/src/app
-ADD https://api.github.com/repos/ocean-data-factory-sweden/koster_ml/git/refs/heads/master version.json
-RUN git clone -b master https://github.com/ocean-data-factory-sweden/koster_ml.git
-WORKDIR /usr/src/app/koster_ml
-
-RUN ls -l
-
 #CUDA requirements
 
 RUN apt-get update &&\
@@ -66,6 +57,15 @@ ENV PYTHONPATH "/usr/local/lib/python3.6/site-packages/cv2/python-3.6/:${PYTHONP
 
 # Confirm path
 RUN echo $PYTHONPATH
+
+# Create a working directory
+RUN mkdir -p /usr/src/app
+WORKDIR /usr/src/app
+ADD https://api.github.com/repos/ocean-data-factory-sweden/koster_ml/git/refs/heads/master version.json
+RUN git clone -b master https://github.com/ocean-data-factory-sweden/koster_ml.git
+WORKDIR /usr/src/app/koster_ml
+
+RUN ls -l
 
 # Install dependencies (pip or conda)
 RUN pip install -U -r requirements.txt

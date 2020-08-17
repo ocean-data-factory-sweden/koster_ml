@@ -240,7 +240,7 @@ def main():
                 "\n".join(
                     [
                         "{} {:.6f} {:.6f} {:.6f} {:.6f}".format(
-                            0,  # i[1],
+                            0 if len(args.class_list) == 1 else i[1],  # single class vs multiple classes
                             min((i[6] + i[8] / 2) / i[4], 1.0),
                             min((i[7] + i[9] / 2) / i[5], 1.0),
                             min(i[8] / i[4], 1.0),
