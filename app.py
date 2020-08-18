@@ -26,30 +26,43 @@ def run_the_app():
     db_path = '/data/database/demo.db'
     movie_dir = '/uploads'
 
-    conn = db_utils.create_connection(db_path)
-    df = pd.read_sql_query(
-        "SELECT b.filename, b.frame_number, a.species_id, a.x_position, a.y_position, a.width, a.height FROM agg_annotations_frame AS a LEFT JOIN subjects AS b ON a.subject_id=b.id",
-        conn,
-    )
+    if st.sidebar.checkbox('Custom File Upload'):
 
-    df["movie_path"] = (
-        movie_dir
-        + "/"
-        + df["filename"].apply(
-            lambda x: os.path.basename(x.rsplit("_frame_")[0]) + ".mov"
+        img_file_buffer = st.file_uploader("Upload an image", type=["png", "jpg", "jpeg"])
+        if img_file_buffer is not None:
+            image = np.array(cv2.imread(img_file_buffer))
+        # Resize the image to the size YOLO model expects
+        selected_frame = cv2.resize(image, (416, 416))
+        # Save in a temp file as YOLO expects filepath
+        cv2.imwrite("/data/predicted_image.jpg", selected_frame)
+
+    else:
+
+
+        conn = db_utils.create_connection(db_path)
+        df = pd.read_sql_query(
+            "SELECT b.filename, b.frame_number, a.species_id, a.x_position, a.y_position, a.width, a.height FROM agg_annotations_frame AS a LEFT JOIN subjects AS b ON a.subject_id=b.id",
+            conn,
         )
-    )
 
-    # Load all movies to speed up frame retrieval
-    movie_dict = {i: pims.Video(i) for i in df["movie_path"].unique()}
+        df["movie_path"] = (
+            movie_dir
+            + "/"
+            + df["filename"].apply(
+                lambda x: os.path.basename(x.rsplit("_frame_")[0]) + ".mov"
+            )
+        )
 
-    files = df["filename"].tolist()
+        # Load all movies to speed up frame retrieval
+        movie_dict = {i: pims.Video(i) for i in df["movie_path"].unique()}
 
-    selected_frame_index, selected_frame = frame_selector_ui(df, movie_dict, files)
+        files = df["filename"].tolist()
+
+        selected_frame_index, selected_frame = frame_selector_ui(df, movie_dict, files)
     
-    if selected_frame_index == None:
-        st.error("No frames fit the criteria. Please select different label or number.")
-        return
+        if selected_frame_index == None:
+            st.error("No frames fit the criteria. Please select different label or number.")
+            return
 
     # Draw the UI element to select parameters for the YOLO object detector.
     confidence_threshold, overlap_threshold = object_detector_ui()
@@ -64,6 +77,22 @@ def run_the_app():
     processed_image = m.detect()
     draw_image_with_boxes(processed_image, "Real-time Computer Vision",
         "**YOLO v3 Model** (overlap `%3.1f`) (confidence `%3.1f`)" % (overlap_threshold, confidence_threshold))
+
+# This sidebar UI is a little search engine to find certain object types.
+def c_frame_selector_ui(df, movie_dict, files):
+
+    st.sidebar.markdown("# Frame")
+
+    # Choose a frame out of the selected frames.
+    selected_frame_index = st.sidebar.slider("Choose a frame (index)", 0, len(files) - 1, 0)
+
+    selected_frame = movie_dict[df["movie_path"][selected_frame_index]][df["frame_number"][selected_frame_index]]
+    # Resize the image to the size YOLO model expects
+    selected_frame = cv2.resize(selected_frame, (416, 416))
+    # Save in a temp file as YOLO expects filepath
+    cv2.imwrite("/data/predicted_image.jpg", selected_frame)
+    return selected_frame_index, "/data/predicted_image.jpg"
+
 
 # This sidebar UI is a little search engine to find certain object types.
 def frame_selector_ui(df, movie_dict, files):

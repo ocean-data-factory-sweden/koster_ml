@@ -1,4 +1,4 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, File, UploadFile
 from sys import platform
 
 from models import *  # set ONNX_EXPORT in models.py
@@ -8,6 +8,15 @@ import urllib
 import numpy as np
 
 app = FastAPI()
+
+def create_file(file: UploadFile = File(...)):
+    global upload_folder
+    file_object = file.file
+    #create empty file to copy the file_object to
+    upload_folder = open(os.path.join(upload_folder, file.filename), 'wb+')
+    shutil.copyfileobj(file_object, upload_folder)
+    upload_folder.close()
+    return {"filename": file.filename}
 
 class KosterModel():
 
@@ -176,8 +185,12 @@ def ping():
 
 @app.get("/predict/{media_path:path}")
 async def predict(media_path: str):
+    try:
+        fn = create_file(media_path)
+    except:
+        pass
     m = KosterModel()
-    m.source = media_path
+    m.source = fn if fn else media_path
     pred = m.detect()
     return {"message": str(pred)}
 
