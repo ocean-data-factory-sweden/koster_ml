@@ -54,6 +54,7 @@ RUN rm -rf ~/opencv*
 
 # Set new environment reference
 ENV PYTHONPATH "/usr/local/lib/python3.6/site-packages/cv2/python-3.6/:${PYTHONPATH}"
+ENV PYTHONPATH="${PYTHONPATH}:/usr/src/app/koster_ml/src"
 
 # Confirm path
 RUN echo $PYTHONPATH
@@ -71,4 +72,5 @@ RUN ls -l
 RUN pip install -U -r requirements.txt
 RUN pip install --upgrade gsutil
 RUN pip install --upgrade torchvision
+RUN pip install --upgrade protobuf
 WORKDIR /usr/src/app/koster_ml
