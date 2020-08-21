@@ -78,6 +78,7 @@ class KosterModel():
 
         def detect(self, save_img=False):
             boxes = []
+            vid = False
             with torch.no_grad():
                 # Set Dataloader
                 vid_path, vid_writer = None, None
@@ -158,6 +159,7 @@ class KosterModel():
                             if dataset.mode == 'images':
                                 cv2.imwrite(save_path, im0)
                             else:
+                                vid = True
                                 if vid_path != save_path:  # new video
                                     vid_path = save_path
                                     if isinstance(vid_writer, cv2.VideoWriter):
@@ -167,7 +169,7 @@ class KosterModel():
 
                                     w = int(vid_cap.get(cv2.CAP_PROP_FRAME_WIDTH))
                                     h = int(vid_cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
-                                    vid_writer = cv2.VideoWriter(save_path, cv2.VideoWriter_fourcc(*opt.fourcc), fps, (w, h))
+                                    vid_writer = cv2.VideoWriter(save_path, cv2.VideoWriter_fourcc(*"h264"), fps, (w, h))
                                 vid_writer.write(im0)
 
                 if self.save_txt or self.save_img:
@@ -176,7 +178,7 @@ class KosterModel():
                         os.system('open ' + self.out + ' ' + save_path)
 
                 print('Done. (%.3fs)' % (time.time() - t0))
-                return im0
+                return im0, vid
 
 @app.get("/ping")
 def ping():
