@@ -101,7 +101,15 @@ def run_the_app():
 
         files = df["filename"].tolist()
         
-        selected_frame_index, selected_frame = frame_selector_ui(df, movie_dict, files)
+        selected_movie_path, selected_movie = movie_selector_ui(movie_dict)
+        movie_frames = get_selected_frames(df, selected_movie_path)
+        selected_frame_index = frame_selector_ui(movie_frames)
+        selected_frame = selected_movie[selected_frame_index]
+        # Resize the image to the size YOLO model expects
+        selected_frame = cv2.resize(selected_frame, (416, 416))
+        # Save in a temp file as YOLO expects filepath
+        cv2.imwrite("/data/predicted_image.jpg", selected_frame)
+        selected_frame = "/data/predicted_image.jpg"
 
         if selected_frame_index == None:
             st.error(
@@ -134,7 +142,7 @@ def get_selected_frames(df, selected_movie_path):
     return df[df.movie_path == selected_movie_path]
 
 # This sidebar UI is a little search engine to find certain object types.
-def frame_selector_ui(df, movie_dict, files):
+def movie_selector_ui(movie_dict):
 
     st.sidebar.markdown("# Movie")
 
@@ -145,20 +153,19 @@ def frame_selector_ui(df, movie_dict, files):
 
     selected_movie_path, selected_movie = list(movie_dict.items())[selected_movie_index]
 
+    return selected_movie_path, selected_movie
+
+# This sidebar UI is a little search engine to find certain object types.
+def frame_selector_ui(movie_frames):
+
     st.sidebar.markdown("# Frame")
 
     # Choose a frame out of the selected frames.
     selected_frame_index = st.sidebar.slider(
-        "Choose a frame (index)", 0, len(get_selected_frames(df, selected_movie_path)) - 1, 0
+        "Choose a frame (index)", 0, len(movie_frames) - 1, 0
     )
 
-    selected_frame = selected_movie[selected_frame_index]
-    # Resize the image to the size YOLO model expects
-    selected_frame = cv2.resize(selected_frame, (416, 416))
-    # Save in a temp file as YOLO expects filepath
-    cv2.imwrite("/data/predicted_image.jpg", selected_frame)
-    return selected_frame_index, "/data/predicted_image.jpg"
-
+    return selected_frame_index
 
 # This sidebar UI lets the user select parameters for the YOLO object detector.
 def object_detector_ui():
