@@ -102,6 +102,14 @@ def main():
         default=0.2,
         required=True,
     )
+    parser.add_argument(
+        "-img",
+        "--img_size",
+        type=float,
+        help="image size for model training",
+        default=(416, 416),
+        required=False,
+    )
 
     args = parser.parse_args()
 
@@ -273,7 +281,7 @@ def main():
     print("Frames extracted successfully")
 
     # Clear images
-    process_frames(args.out_path + "/images", size=(416, 416))
+    process_frames(args.out_path + "/images", size=args.img_size)
 
     # Create training/test sets
     split_frames(args.out_path, args.perc_test)
