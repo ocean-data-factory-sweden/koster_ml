@@ -3,7 +3,7 @@ import streamlit as st
 import altair as alt
 import pandas as pd
 import numpy as np
-import os, urllib, cv2, pims, json
+import os, urllib, cv2, pims, json, random
 import sqlite3
 import db_utils
 
@@ -17,6 +17,9 @@ st.set_option("deprecation.showfileUploaderEncoding", False)
 def main():
     # Set up appearance of sidebar
     st.sidebar.title("Koster Lab Live Demo")
+    st.sidebar.markdown("The Koster Seafloor laboratory is a collaborative project between Wildlife.ai, SeAnalytics and the University of Gothenburg. \
+                        This project would not have been possible without the support from the Nordic e-Infrastructure Collaboration, the Ocean Data Factory, \
+                        the Swedish Biodiversity Data Infrastructure, and the Center for Sea and Society.")
     st.sidebar.image(
         "https://panoptes-uploads.zooniverse.org/production/project_avatar/86c23ca7-bbaa-4e84-8d8a-876819551431.png",
         use_column_width=True,
@@ -29,7 +32,6 @@ def main():
 def load_network():
     m = KosterModel()
     return m
-
 
 def run_the_app():
 
@@ -55,8 +57,9 @@ def run_the_app():
         return df
 
     # Draw the UI element to select parameters for the YOLO object detector.
-    confidence_threshold, overlap_threshold = object_detector_ui()
     m = load_network()
+    confidence_threshold, overlap_threshold = object_detector_ui()
+
 
     # Default is to load images
     if st.sidebar.checkbox("Custom File Upload", value=True):
@@ -67,55 +70,59 @@ def run_the_app():
         )
 
         if img_file_buffer is not None:
-
+            fid = random.randint(100000000000,999999999999)
             # text_io = io.TextIOWrapper(img_file_buffer)
             raw_buffer = img_file_buffer.read()
             bytes_as_np_array = np.fromstring(raw_buffer, np.uint8)
-
             # if image
             try:
                 image = cv2.imdecode(bytes_as_np_array, -1)
                 # Resize the image to the size YOLO model expects
                 selected_frame = cv2.resize(image, (416, 416))
                 # Save in a temp file as YOLO expects filepath
-                cv2.imwrite("/data/predicted_image.jpg", selected_frame)
-                selected_frame = "/data/predicted_image.jpg"
+                
+                cv2.imwrite(f"/data/testapi/temp_{fid}.png", selected_frame)
+                selected_frame = f"/data/testapi/temp_{fid}.png"
             # if video
             except:
                 video = True
-                with open("/data/predicted_video.mp4", "wb") as out_file:  # open for [w]riting as [b]inary
+                with open("/data/testapi/temp_{fid}.mp4", "wb") as out_file:  # open for [w]riting as [b]inary
                      out_file.write(raw_buffer)
 
-                selected_frame = "/data/predicted_video.mp4"
+                selected_frame = "/data/testapi/temp_{fid}.mp4"
 
         else:
 
             # Show the last image
-            selected_frame = "/data/predicted_image.jpg"
+            st.error(
+                "No file uploaded. Please select a file from your computer."
+            )
+            return
 
     else:
-        
+        # Generate temp id
+        fid = random.randint(100000000000,999999999999)
+        # Load classified data
         df = load_data()
         # Load all movies to speed up frame retrieval
         movie_dict = OrderedDict({i: pims.Video(i) for i in df["movie_path"].unique()})
-
-        files = df["filename"].tolist()
         
+        # Select a movie
         selected_movie_path, selected_movie = movie_selector_ui(movie_dict)
         movie_frames = get_selected_frames(df, selected_movie_path)
+        
+        # Select frame
         selected_frame_index = frame_selector_ui(movie_frames)
-        selected_frame = selected_movie[selected_frame_index]
+        selected_frame_number = movie_frames.iloc[selected_frame_index]
+        selected_frame = selected_movie[selected_frame_number]
+
         # Resize the image to the size YOLO model expects
         selected_frame = cv2.resize(selected_frame, (416, 416))
         # Save in a temp file as YOLO expects filepath
-        cv2.imwrite("/data/predicted_image.jpg", selected_frame)
-        selected_frame = "/data/predicted_image.jpg"
+        selected_frame = cv2.cvtColor(selected_frame, cv2.COLOR_BGR2RGB)
 
-        if selected_frame_index == None:
-            st.error(
-                "No frames fit the criteria. Please select different label or number."
-            )
-            return
+        cv2.imwrite(f"/data/testapi/temp_{fid}.png", selected_frame)
+        selected_frame = f"/data/testapi/temp_{fid}.png"
 
     # Load the image from S3.
     m.source = selected_frame
@@ -128,18 +135,20 @@ def run_the_app():
         st.header("Real-time Computer Vision")
         st.markdown("**YOLO v3 Model** (overlap `%3.1f`) (confidence `%3.1f`)"
                     % (overlap_threshold, confidence_threshold))
-        st.video("/data/testapi/predicted_video.mp4")
+        st.video(f"/data/testapi/temp_{fid}.mp4")
+        os.remove(f"/data/testapi/temp_{fid}.mp4")
     else:
-        draw_image_with_boxes(
+        draw_image_with_boxes(fid,
             processed_image,
             "Real-time Computer Vision",
             "**YOLO v3 Model** (overlap `%3.1f`) (confidence `%3.1f`)"
             % (overlap_threshold, confidence_threshold),
             )
+        os.remove(f"/data/testapi/temp_{fid}.png")
 
 @st.cache(hash_funcs={np.ufunc: str})
 def get_selected_frames(df, selected_movie_path):
-    return df[df.movie_path == selected_movie_path]
+    return df[df.movie_path == selected_movie_path]['frame_number']
 
 # This sidebar UI is a little search engine to find certain object types.
 def movie_selector_ui(movie_dict):
@@ -148,10 +157,11 @@ def movie_selector_ui(movie_dict):
 
     # Choose a movie out of the selected movies.
     selected_movie_index = st.sidebar.slider(
-        "Choose a movie (index)", 0, len(movie_dict), 0
+        "Choose a movie (index)", 0, len(movie_dict) - 1, 0
     )
 
     selected_movie_path, selected_movie = list(movie_dict.items())[selected_movie_index]
+    st.sidebar.markdown(f"Selected movie: {os.path.basename(selected_movie_path)}")
 
     return selected_movie_path, selected_movie
 
@@ -178,11 +188,11 @@ def object_detector_ui():
 
 
 # Draws an image with boxes overlayed to indicate the presence of cars, pedestrians etc.
-def draw_image_with_boxes(image_with_boxes, header, description):
+def draw_image_with_boxes(fid, image_with_boxes, header, description):
     # Draw the header and image.
     st.subheader(header)
     st.markdown(description)
-    st.image(image_with_boxes.astype(np.uint8), use_column_width=True)
+    st.image(f"/data/testapi/temp_{fid}.png", use_column_width=True)
 
 
 if __name__ == "__main__":
