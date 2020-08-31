@@ -86,10 +86,11 @@ def run_the_app():
             # if video
             except:
                 video = True
-                with open("/data/testapi/temp_{fid}.mp4", "wb") as out_file:  # open for [w]riting as [b]inary
+                
+                with open(f"/data/temp_{fid}.mp4", "wb") as out_file:  # open for [w]riting as [b]inary
                      out_file.write(raw_buffer)
 
-                selected_frame = "/data/testapi/temp_{fid}.mp4"
+                selected_frame = f"/data/temp_{fid}.mp4"
 
         else:
 
