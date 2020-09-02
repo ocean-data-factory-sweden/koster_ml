@@ -16,16 +16,17 @@ st.set_option("deprecation.showfileUploaderEncoding", False)
 
 def main():
     # Set up appearance of sidebar
-    st.sidebar.title("Koster Lab Live Demo")
-    st.sidebar.markdown("The Koster Seafloor laboratory is a collaborative project between Wildlife.ai, SeAnalytics and the University of Gothenburg. \
-                        This project would not have been possible without the support from the Nordic e-Infrastructure Collaboration, the Ocean Data Factory, \
-                        the Swedish Biodiversity Data Infrastructure, and the Center for Sea and Society.")
+    st.sidebar.title("Koster Lab - Deep Sea Coral Detection")
     st.sidebar.image(
         "https://panoptes-uploads.zooniverse.org/production/project_avatar/86c23ca7-bbaa-4e84-8d8a-876819551431.png",
         use_column_width=True,
     )
     # Run main app
     run_the_app()
+    st.sidebar.image(
+        "https://panoptes-uploads.zooniverse.org/production/project_attached_image/99429003-51ae-4667-b9b0-7ec2ff518723.png",
+        use_column_width=True,
+    )
 
 
 @st.cache(allow_output_mutation=True)
@@ -33,8 +34,8 @@ def load_network():
     m = KosterModel()
     return m
 
-def run_the_app():
 
+def run_the_app():
     @st.cache
     def load_data():
         db_path = "/data/database/demo.db"
@@ -59,7 +60,9 @@ def run_the_app():
     # Draw the UI element to select parameters for the YOLO object detector.
     m = load_network()
     confidence_threshold, overlap_threshold = object_detector_ui()
-
+    st.markdown(
+        "Instructions: Use the sliders to adjust the model hyperparameters and wait to see the impact on the predicted bounding boxes."
+    )
 
     # Default is to load images
     if st.sidebar.checkbox("Custom File Upload", value=True):
@@ -68,57 +71,63 @@ def run_the_app():
             "Upload an image/video (maximum size 200MB). Supported formats: png, jpg, jpeg, mov, mp4",
             type=["png", "jpg", "jpeg", "mov", "mp4"],
         )
+        st.warning(
+            "Disclaimer: By uploading your files here, you also accept that any uploaded files will be processed on an external server located within the EU. \
+            You also accept that these files may be stored and used for training purposes in future model iterations. At your request, any data provided will be removed from our servers \
+            in accordance with prevailing GDPR regulations."
+        )
 
         if img_file_buffer is not None:
-            fid = random.randint(100000000000,999999999999)
+            fid = random.randint(100000000000, 999999999999)
             # text_io = io.TextIOWrapper(img_file_buffer)
             raw_buffer = img_file_buffer.read()
             bytes_as_np_array = np.fromstring(raw_buffer, np.uint8)
             # if image
             try:
                 image = cv2.imdecode(bytes_as_np_array, -1)
-                # Resize the image to the size YOLO model expects
-                selected_frame = cv2.resize(image, (416, 416))
-                # Save in a temp file as YOLO expects filepath
                 
+                # Resize the image to the size YOLO model expects
+                selected_frame = image #cv2.resize(image, (416, 416))
+                
+                # Save in a temp file as YOLO expects filepath
                 cv2.imwrite(f"/data/testapi/temp_{fid}.png", selected_frame)
                 selected_frame = f"/data/testapi/temp_{fid}.png"
             # if video
             except:
                 video = True
-                
-                with open(f"/data/temp_{fid}.mp4", "wb") as out_file:  # open for [w]riting as [b]inary
-                     out_file.write(raw_buffer)
+
+                with open(
+                    f"/data/temp_{fid}.mp4", "wb"
+                ) as out_file:  # open for [w]riting as [b]inary
+                    out_file.write(raw_buffer)
 
                 selected_frame = f"/data/temp_{fid}.mp4"
 
         else:
 
             # Show the last image
-            st.error(
-                "No file uploaded. Please select a file from your computer."
-            )
+            st.error("No file uploaded. Please select a file from your computer.")
             return
 
     else:
         # Generate temp id
-        fid = random.randint(100000000000,999999999999)
+        fid = random.randint(100000000000, 999999999999)
         # Load classified data
         df = load_data()
         # Load all movies to speed up frame retrieval
         movie_dict = OrderedDict({i: pims.Video(i) for i in df["movie_path"].unique()})
-        
+
         # Select a movie
         selected_movie_path, selected_movie = movie_selector_ui(movie_dict)
         movie_frames = get_selected_frames(df, selected_movie_path)
-        
+
         # Select frame
         selected_frame_index = frame_selector_ui(movie_frames)
         selected_frame_number = movie_frames.iloc[selected_frame_index]
         selected_frame = selected_movie[selected_frame_number]
 
         # Resize the image to the size YOLO model expects
-        selected_frame = cv2.resize(selected_frame, (416, 416))
+        #selected_frame = cv2.resize(selected_frame, (416, 416))
         # Save in a temp file as YOLO expects filepath
         selected_frame = cv2.cvtColor(selected_frame, cv2.COLOR_BGR2RGB)
 
@@ -133,23 +142,28 @@ def run_the_app():
     # Get the boxes for the objects detected by YOLO by running the YOLO model.
     processed_image, vid = m.detect()
     if vid:
-        st.header("Real-time Computer Vision")
-        st.markdown("**YOLO v3 Model** (overlap `%3.1f`) (confidence `%3.1f`)"
-                    % (overlap_threshold, confidence_threshold))
+        st.header("Model Output")
+        st.markdown(
+            "**YOLO v3 Model** (overlap `%3.1f`) (confidence `%3.1f`)"
+            % (overlap_threshold, confidence_threshold)
+        )
         st.video(f"/data/testapi/temp_{fid}.mp4")
         os.remove(f"/data/testapi/temp_{fid}.mp4")
     else:
-        draw_image_with_boxes(fid,
+        draw_image_with_boxes(
+            fid,
             processed_image,
-            "Real-time Computer Vision",
+            "Model Output",
             "**YOLO v3 Model** (overlap `%3.1f`) (confidence `%3.1f`)"
             % (overlap_threshold, confidence_threshold),
-            )
+        )
         os.remove(f"/data/testapi/temp_{fid}.png")
+
 
 @st.cache(hash_funcs={np.ufunc: str})
 def get_selected_frames(df, selected_movie_path):
-    return df[df.movie_path == selected_movie_path]['frame_number']
+    return df[df.movie_path == selected_movie_path]["frame_number"]
+
 
 # This sidebar UI is a little search engine to find certain object types.
 def movie_selector_ui(movie_dict):
@@ -166,6 +180,7 @@ def movie_selector_ui(movie_dict):
 
     return selected_movie_path, selected_movie
 
+
 # This sidebar UI is a little search engine to find certain object types.
 def frame_selector_ui(movie_frames):
 
@@ -178,9 +193,10 @@ def frame_selector_ui(movie_frames):
 
     return selected_frame_index
 
+
 # This sidebar UI lets the user select parameters for the YOLO object detector.
 def object_detector_ui():
-    st.sidebar.markdown("# Model")
+    st.sidebar.subtitle("Model hyperparameters")
     confidence_threshold = st.sidebar.slider(
         "Confidence threshold", 0.0, 1.0, 0.5, 0.01
     )
@@ -198,4 +214,3 @@ def draw_image_with_boxes(fid, image_with_boxes, header, description):
 
 if __name__ == "__main__":
     main()
-                                  

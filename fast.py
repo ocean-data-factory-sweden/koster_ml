@@ -6,6 +6,7 @@ from utils.datasets import *
 from utils.utils import *
 import urllib
 import numpy as np
+import streamlit as st
 
 app = FastAPI()
 
@@ -79,6 +80,7 @@ class KosterModel():
         def detect(self, save_img=False):
             boxes = []
             vid = False
+            my_bar = st.progress(0)
             with torch.no_grad():
                 # Set Dataloader
                 vid_path, vid_writer = None, None
@@ -96,7 +98,11 @@ class KosterModel():
 
                 # Run inference
                 t0 = time.time()
+                i = 0
                 for path, img, im0s, vid_cap in dataset:
+                    i += 1
+                    perc_complete = (i / len(dataset))
+                    my_bar.progress(perc_complete)
                     t = time.time()
                     img = torch.from_numpy(img).to(self.device)
                     img = img.half() if self.half else img.float()  # uint8 to fp16/32
