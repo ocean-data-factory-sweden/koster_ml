@@ -98,11 +98,7 @@ class KosterModel():
 
                 # Run inference
                 t0 = time.time()
-                i = 0
                 for path, img, im0s, vid_cap in dataset:
-                    i += 1
-                    perc_complete = (i / len(dataset))
-                    my_bar.progress(perc_complete)
                     t = time.time()
                     img = torch.from_numpy(img).to(self.device)
                     img = img.half() if self.half else img.float()  # uint8 to fp16/32
@@ -121,6 +117,9 @@ class KosterModel():
                     classify = False
                     if classify:
                         pred = apply_classifier(pred, modelc, img, im0s)
+                    
+                    # Start progress counter
+                    i = 0
 
                     # Process detections
                     for i, det in enumerate(pred):  # detections per image
@@ -177,6 +176,10 @@ class KosterModel():
                                     h = int(vid_cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
                                     vid_writer = cv2.VideoWriter(save_path, cv2.VideoWriter_fourcc(*"h264"), fps, (w, h))
                                 vid_writer.write(im0)
+
+                i += 1
+                perc_complete = i / len(dataset)
+                my_bar.progress(perc_complete)
 
                 if self.save_txt or self.save_img:
                     print('Results saved to %s' % os.getcwd() + os.sep + self.out)

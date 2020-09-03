@@ -60,21 +60,22 @@ def run_the_app():
     # Draw the UI element to select parameters for the YOLO object detector.
     m = load_network()
     confidence_threshold, overlap_threshold = object_detector_ui()
-    st.markdown(
-        "Instructions: Use the sliders to adjust the model hyperparameters and wait to see the impact on the predicted bounding boxes."
-    )
+    #st.markdown(
+    #    "Instructions: Use the sliders to adjust the model hyperparameters and wait to see the impact on the predicted bounding boxes."
+    #)
 
     # Default is to load images
     if st.sidebar.checkbox("Custom File Upload", value=True):
 
-        img_file_buffer = st.file_uploader(
-            "Upload an image/video (maximum size 200MB). Supported formats: png, jpg, jpeg, mov, mp4",
-            type=["png", "jpg", "jpeg", "mov", "mp4"],
-        )
         st.warning(
             "Disclaimer: By uploading your files here, you also accept that any uploaded files will be processed on an external server located within the EU. \
             You also accept that these files may be stored and used for training purposes in future model iterations. At your request, any data provided will be removed from our servers \
             in accordance with prevailing GDPR regulations."
+        )
+
+        img_file_buffer = st.file_uploader(
+            "Upload an image/video (maximum size 200MB). Supported formats: png, jpg, jpeg, mov, mp4. Instructions: Use the sliders to adjust the model hyperparameters and wait to see the impact on the predicted bounding boxes.",
+            type=["png", "jpg", "jpeg", "mov", "mp4"],
         )
 
         if img_file_buffer is not None:
@@ -196,7 +197,7 @@ def frame_selector_ui(movie_frames):
 
 # This sidebar UI lets the user select parameters for the YOLO object detector.
 def object_detector_ui():
-    st.sidebar.subtitle("Model hyperparameters")
+    st.sidebar.subheader("Model hyperparameters")
     confidence_threshold = st.sidebar.slider(
         "Confidence threshold", 0.0, 1.0, 0.5, 0.01
     )
