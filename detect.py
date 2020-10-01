@@ -5,18 +5,24 @@ from models import *  # set ONNX_EXPORT in models.py
 from utils.datasets import *
 from utils.utils import *
 
+import pandas as pd
+import datetime
 
 def detect(save_img=False):
     img_size = (320, 192) if ONNX_EXPORT else opt.img_size  # (320, 192) or (416, 256) or (608, 352) for (height, width)
-    out, source, weights, half, view_img, save_txt = opt.output, opt.source, opt.weights, opt.half, opt.view_img, opt.save_txt
+    out, source, weights, half, view_img, save_txt, save_obs = opt.output, opt.source, opt.weights, opt.half, opt.view_img, opt.save_txt, opt.save_obs
     webcam = source == '0' or source.startswith('rtsp') or source.startswith('http') or source.endswith('.txt')
 
     # Initialize
     device = torch_utils.select_device(device='cpu' if ONNX_EXPORT else opt.device)
-    if os.path.exists(out):
-        shutil.rmtree(out)  # delete output folder
-    os.makedirs(out)  # make new output folder
+    if not os.path.exists(out): os.makedirs(out)  # make new output folder
 
+    # Timestamp detections
+    now = datetime.datetime.today() 
+    nTime = now.strftime("%d-%m-%Y-%H-%M-%S")
+    dest = os.path.join(out+'/'+nTime)
+    if not os.path.exists(dest):
+        os.makedirs(dest) #create dest dir
     # Initialize model
     model = Darknet(opt.cfg, img_size)
 
@@ -75,8 +81,11 @@ def detect(save_img=False):
     colors = [[random.randint(0, 255) for _ in range(3)] for _ in range(len(names))]
 
     # Run inference
+    paths, n_observations = [], []
     t0 = time.time()
+    fid = 0
     for path, img, im0s, vid_cap in dataset:
+        paths.append(path)
         t = time.time()
         img = torch.from_numpy(img).to(device)
         img = img.half() if half else img.float()  # uint8 to fp16/32
@@ -101,7 +110,7 @@ def detect(save_img=False):
             else:
                 p, s, im0 = path, '', im0s
 
-            save_path = str(Path(out) / Path(p).name)
+            save_path = str(Path(dest) / Path(p).name)
             s += '%gx%g ' % img.shape[2:]  # print string
             if det is not None and len(det):
                 # Rescale boxes from img_size to im0 size
@@ -110,6 +119,7 @@ def detect(save_img=False):
                 # Print results
                 for c in det[:, -1].unique():
                     n = (det[:, -1] == c).sum()  # detections per class
+                    n_observations.append(n.item())
                     s += '%g %ss, ' % (n, names[int(c)])  # add to string
 
                 # Write results
@@ -121,6 +131,22 @@ def detect(save_img=False):
                     if save_img or view_img:  # Add bbox to image
                         label = '%s %.2f' % (names[int(cls)], conf)
                         plot_one_box(xyxy, im0, label=label, color=colors[int(cls)])
+            
+            elif det is None or len(det) == 0:
+                n_observations.append(0)
+                
+        #Export 10,000 frames per file to csv
+        if save_obs:
+            save_img = False
+            # Save model configuration
+            with open(dest + '/model_config.txt', 'w') as file:
+                file.write(str(opt))
+
+            if len(paths) == 10000:
+                pd.DataFrame(np.column_stack([paths, n_observations]),
+                             columns=['path', 'n']).to_csv(dest + f'/{fid}_obs_summary.csv')
+                fid += 1
+                paths, n_observations = [], []
 
             # Print time (inference + NMS)
             print('%sDone. (%.3fs)' % (s, time.time() - t))
@@ -153,7 +179,7 @@ def detect(save_img=False):
             os.system('open ' + out + ' ' + save_path)
 
     print('Done. (%.3fs)' % (time.time() - t0))
-
+    
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
@@ -172,6 +198,7 @@ if __name__ == '__main__':
     parser.add_argument('--save-txt', action='store_true', help='save results to *.txt')
     parser.add_argument('--classes', nargs='+', type=int, help='filter by class')
     parser.add_argument('--agnostic-nms', action='store_true', help='class-agnostic NMS')
+    parser.add_argument('--save-obs', action='store_true', help='saving observations for visualisation')
     opt = parser.parse_args()
     print(opt)
 
