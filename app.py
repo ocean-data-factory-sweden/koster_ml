@@ -38,7 +38,7 @@ def load_network():
 def run_the_app():
     @st.cache
     def load_data():
-        db_path = "/data/database/demo.db"
+        db_path = "/data/koster_lab-nm.db"
         movie_dir = "/uploads"
         conn = db_utils.create_connection(db_path)
 
@@ -60,9 +60,9 @@ def run_the_app():
     # Draw the UI element to select parameters for the YOLO object detector.
     m = load_network()
     confidence_threshold, overlap_threshold = object_detector_ui()
-    #st.markdown(
+    # st.markdown(
     #    "Instructions: Use the sliders to adjust the model hyperparameters and wait to see the impact on the predicted bounding boxes."
-    #)
+    # )
 
     # Default is to load images
     if st.sidebar.checkbox("Custom File Upload", value=True):
@@ -86,10 +86,10 @@ def run_the_app():
             # if image
             try:
                 image = cv2.imdecode(bytes_as_np_array, -1)
-                
+
                 # Resize the image to the size YOLO model expects
-                selected_frame = image #cv2.resize(image, (416, 416))
-                
+                selected_frame = image  # cv2.resize(image, (416, 416))
+
                 # Save in a temp file as YOLO expects filepath
                 cv2.imwrite(f"/data/testapi/temp_{fid}.png", selected_frame)
                 selected_frame = f"/data/testapi/temp_{fid}.png"
@@ -128,7 +128,7 @@ def run_the_app():
         selected_frame = selected_movie[selected_frame_number]
 
         # Resize the image to the size YOLO model expects
-        #selected_frame = cv2.resize(selected_frame, (416, 416))
+        # selected_frame = cv2.resize(selected_frame, (416, 416))
         # Save in a temp file as YOLO expects filepath
         selected_frame = cv2.cvtColor(selected_frame, cv2.COLOR_BGR2RGB)
 
