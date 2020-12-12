@@ -10,7 +10,7 @@ from ast import literal_eval
 from tqdm import tqdm
 
 from PIL import Image
-from db_utils import create_connection
+from db_utils import create_connection, unswedify
 from prepare_input import ProcFrameCuda, ProcFrames
 
 # utility functions
@@ -19,7 +19,6 @@ def process_frames(frames_path, size=(416, 416)):
     # Run tests
     gpu_time_0, n_frames = ProcFrames(partial(ProcFrameCuda, size=size), frames_path)
     print(f"Processing performance: {n_frames} frames, {gpu_time_0:.2f} ms/frame")
-
 
 def split_frames(data_path, perc_test):
 
@@ -51,7 +50,6 @@ def split_frames(data_path, perc_test):
                 file_valid.write(pathAndFilename + "\n")
         counter = counter + 1
     print("Training and test set completed")
-
 
 def main():
     "Handles argument parsing and launches the correct function."
@@ -154,8 +152,15 @@ def main():
             lambda x: os.path.basename(x.rsplit("_frame_")[0]) + ".mov"
         )
     )
+    
+    video_dict = {}
+    for i in train_rows["movie_path"].unique():
+        try:
+            video_dict[i] = pims.Video(i)
+        except:
+            video_dict[i] = pims.Video(unswedify(i))
 
-    video_dict = {i: pims.Video(i) for i in train_rows["movie_path"].unique()}
+    #video_dict = {i: pims.Video(unswedify(i)) for i in train_rows["movie_path"].unique()}
 
     train_rows = train_rows[
         [

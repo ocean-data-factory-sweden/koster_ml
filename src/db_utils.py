@@ -4,8 +4,6 @@ import pandas as pd
 import numpy as np
 import io
 
-# Utility functions for common database operations
-
 def create_connection(db_file):
     """ create a database connection to the SQLite database
         specified by db_file
@@ -22,7 +20,6 @@ def create_connection(db_file):
 
     return conn
 
-
 def insert_many(conn, data, table, count):
     """
     Insert multiple rows into table
@@ -38,7 +35,6 @@ def insert_many(conn, data, table, count):
 
     cur = conn.cursor()
     cur.executemany(f"INSERT INTO {table} VALUES {values}", data)
-
 
 def retrieve_query(conn, query):
     """
@@ -57,7 +53,6 @@ def retrieve_query(conn, query):
 
     return rows
 
-
 def execute_sql(conn, sql):
     """ Execute multiple SQL statements without return
     :param conn: Connection object
@@ -69,7 +64,6 @@ def execute_sql(conn, sql):
         c.executescript(sql)
     except sqlite3.Error as e:
         print(e)
-
 
 def add_to_table(db_path, table_name, values, num_fields):
 
@@ -86,7 +80,6 @@ def add_to_table(db_path, table_name, values, num_fields):
 
     print(f"Updated {table_name}")
 
-
 def test_table(df, table_name, keys=["id"]):
     try:
         # check that there are no id columns with a NULL value, which means that they were not matched
@@ -95,7 +88,6 @@ def test_table(df, table_name, keys=["id"]):
         print(
             f"The table {table_name} has invalid entries, please ensure that all columns are non-zero"
         )
-
 
 def get_id(row, field_name, table_name, conn, conditions={"a": "=b"}):
 
@@ -118,13 +110,22 @@ def get_id(row, field_name, table_name, conn, conditions={"a": "=b"}):
 
 def unswedify(string):
     """ Convert ä and ö to utf-8
-    """ 
-    return (
-        string.encode("utf-8")
-        .replace(b"\xc3\xa4", b"a\xcc\x88")
-        .replace(b"\xc3\xb6", b"a\xcc\x88")
-        .decode("utf-8")
-    )
+    """
+    if b"\xc3\xa4" in string.encode("utf-8") or b"\xc3\xb6" in string.encode("utf-8"):
+        return (
+            string.encode("utf-8")
+            .replace(b"\xc3\xa4", b"a\xcc\x88")
+            .replace(b"\xc3\xb6", b"o\xcc\x88")
+            .decode("utf-8")
+        )
+    elif b"a\xcc\x88" in string.encode("utf-8"):
+        return (
+            string.encode("utf-8")
+            .replace(b"a\xcc\x88", b"\xc3\xa4")
+            .decode("utf-8")
+        )
+    else:
+        return string
 
 
 
@@ -171,4 +172,3 @@ def combine_duplicates(annot_df, duplicates_file_id):
     annot_df['subject_ids'] = np.where(annot_df.single_subject_id.isnull(), annot_df.subject_ids, annot_df.single_subject_id)
     
     return annot_df
-
