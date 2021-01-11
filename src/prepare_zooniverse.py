@@ -158,7 +158,10 @@ def main():
         try:
             video_dict[i] = pims.Video(i)
         except:
-            video_dict[i] = pims.Video(unswedify(i))
+            try:
+                video_dict[i] = pims.Video(unswedify(i))
+            except:
+                pass
 
     #video_dict = {i: pims.Video(unswedify(i)) for i in train_rows["movie_path"].unique()}
 
