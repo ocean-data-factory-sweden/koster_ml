@@ -140,7 +140,6 @@ def main():
         )
         
     # Add dataset metadata to dataset table in koster db
-
     bboxes = {}
     tboxes = {}
     new_rows = []
@@ -187,43 +186,44 @@ def main():
         named_tuple = tuple([filename, species_id, frame_number, movie_path])
 
         # Track intermediate frames
-        bboxes[named_tuple], tboxes[named_tuple] = [], []
-        bboxes[named_tuple].extend(tuple(i[4:]) for i in group.values)
-        tboxes[named_tuple].extend(
-            frame_tracker.track_objects(
-                video_dict[name[3]],
-                species_id,
-                bboxes[named_tuple],
-                frame_number,
-                frame_number + 10,
-            )
-        )
-
-        for box in bboxes[named_tuple]:
-            new_rows.append(
-                (
-                    filename,
+        if name[3] in video_dict:
+            bboxes[named_tuple], tboxes[named_tuple] = [], []
+            bboxes[named_tuple].extend(tuple(i[4:]) for i in group.values)
+            tboxes[named_tuple].extend(
+                frame_tracker.track_objects(
+                    video_dict[name[3]],
                     species_id,
+                    bboxes[named_tuple],
                     frame_number,
-                    movie_path,
-                    video_dict[name[3]][frame_number].shape[1],
-                    video_dict[name[3]][frame_number].shape[0],
+                    frame_number + 10,
                 )
-                + box
             )
 
-        for box in tboxes[named_tuple]:
-            new_rows.append(
-                (
-                    filename,
-                    species_id,
-                    frame_number + box[0],
-                    movie_path,
-                    video_dict[name[3]][frame_number].shape[1],
-                    video_dict[name[3]][frame_number].shape[0],
+            for box in bboxes[named_tuple]:
+                new_rows.append(
+                    (
+                        filename,
+                        species_id,
+                        frame_number,
+                        movie_path,
+                        video_dict[name[3]][frame_number].shape[1],
+                        video_dict[name[3]][frame_number].shape[0],
+                    )
+                    + box
                 )
-                + box[1:]
-            )
+
+            for box in tboxes[named_tuple]:
+                new_rows.append(
+                    (
+                        filename,
+                        species_id,
+                        frame_number + box[0],
+                        movie_path,
+                        video_dict[name[3]][frame_number].shape[1],
+                        video_dict[name[3]][frame_number].shape[0],
+                    )
+                    + box[1:]
+                )
 
     # Export txt files
     full_rows = pd.DataFrame(
@@ -282,9 +282,10 @@ def main():
             )
 
         # Save frames to image files
-        Image.fromarray(video_dict[name[2]][name[1]][:, :, [2, 1, 0]]).save(
-            f"{args.out_path}/images/{file_base}_frame_{name[1]}.jpg"
-        )
+        if name[2] in video_dict:
+            Image.fromarray(video_dict[name[2]][name[1]][:, :, [2, 1, 0]]).save(
+                f"{args.out_path}/images/{file_base}_frame_{name[1]}.jpg"
+            )
 
     print("Frames extracted successfully")
 
