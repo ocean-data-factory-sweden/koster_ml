@@ -4,6 +4,7 @@ import numpy as np
 
 from functools import partial
 from pathlib import Path
+from db_utils import unswedify
 
 # globals
 frame_device = cv.cuda_GpuMat()
@@ -52,9 +53,12 @@ def ProcFrames(proc_frame_func, frames_path):
     files = os.listdir(frames_path)
     for f in files:
         if f.endswith((".png", ".jpg", ".jpeg", ".tiff", ".bmp", ".gif")):
-            print(str(Path(frames_path, f)))
-            new_frame = proc_frame_func(cv.imread(str(Path(frames_path, f))))
-            cv.imwrite(str(Path(frames_path, f)), new_frame)
+            try:
+                new_frame = proc_frame_func(cv.imread(str(Path(frames_path, f))))
+                cv.imwrite(str(Path(frames_path, f)), new_frame)
+            except:
+                new_frame = proc_frame_func(cv.imread(unswedify(str(Path(frames_path, f)))))
+                cv.imwrite(str(Path(frames_path, f)), new_frame)
     end = time.time()
     return (end - start) * 1000 / len(files), len(files)
 
