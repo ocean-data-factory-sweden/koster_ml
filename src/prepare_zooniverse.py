@@ -159,7 +159,7 @@ def main():
             video_dict[i] = pims.Video(i)
         except:
             try:
-                video_dict[i] = pims.Video(unswedify(i))
+                video_dict[unswedify(i)] = pims.Video(unswedify(i))
             except:
                 pass
 
