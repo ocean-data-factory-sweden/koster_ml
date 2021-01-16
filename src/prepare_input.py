@@ -52,6 +52,7 @@ def ProcFrames(proc_frame_func, frames_path):
     files = os.listdir(frames_path)
     for f in files:
         if f.endswith((".png", ".jpg", ".jpeg", ".tiff", ".bmp", ".gif")):
+            print(str(Path(frames_path, f)))
             new_frame = proc_frame_func(cv.imread(str(Path(frames_path, f))))
             cv.imwrite(str(Path(frames_path, f)), new_frame)
     end = time.time()
@@ -79,6 +80,7 @@ def ProcVid(proc_frame_func, vidPath):
 
 def ProcFrameCuda(frame, size=(416, 416)):
     frame_device.upload(frame)
+    print(frame_device)
     # change frame to frame_device below for gpu version
     frame_device_small = cv.cuda.resize(frame_device, dsize=size)
     fg_device = cv.cuda.cvtColor(frame_device_small, cv.COLOR_BGR2RGB)
