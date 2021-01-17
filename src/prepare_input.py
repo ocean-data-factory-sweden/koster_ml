@@ -86,7 +86,7 @@ def ProcFrameCuda(frame, size=(416, 416)):
     frame_device_small = cv.resize(frame, dsize=size)
     fg_device = cv.cvtColor(frame_device_small, cv.COLOR_BGR2RGB)
     #fg_host = fg_device.download()
-    fg_host = clearImage(fg_host)
+    fg_host = clearImage(fg_device)
     # store_res = True
     # if store_res:
     #    gpu_res.append(np.copy(fg_host))
