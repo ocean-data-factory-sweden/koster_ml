@@ -1,0 +1,4 @@
+classes = 1
+train  = /usr/src/app/data_dir/train.txt 
+valid  = /usr/src/app/data_dir/valid.txt
+names = data/koster.names
