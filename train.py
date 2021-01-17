@@ -15,7 +15,7 @@ try:  # Mixed precision training https://github.com/NVIDIA/apex
 except:
     mixed_precision = False  # not installed
 
-wdir = '/data/weights' + os.sep  # weights dir
+wdir = opt.out + os.sep  # weights dir
 last = wdir + 'last.pt'
 best = wdir + 'best.pt'
 results_file = 'results.txt'
@@ -255,7 +255,7 @@ def train():
 
             # Plot images with bounding boxes
             if ni < 1:
-                f = 'train_batch%g.png' % i  # filename
+                f = f'{wdir}/train_batch%g.png' % i  # filename
                 plot_images(imgs=imgs, targets=targets, paths=paths, fname=f)
                 if tb_writer:
                     tb_writer.add_image(f, cv2.imread(f)[:, :, ::-1], dataformats='HWC')
@@ -411,6 +411,7 @@ if __name__ == '__main__':
     parser.add_argument('--adam', action='store_true', help='use adam optimizer')
     parser.add_argument('--single-cls', action='store_true', help='train as single-class dataset')
     parser.add_argument('--var', type=float, help='debug variable')
+    parser.add_argument('--out', type=str, default='data', help='out path for weights and images')
     opt = parser.parse_args()
     opt.weights = last if opt.resume else opt.weights
     print(opt)
