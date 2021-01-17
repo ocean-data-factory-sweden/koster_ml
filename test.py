@@ -52,6 +52,7 @@ def test(cfg,
     iouv = torch.linspace(0.5, 0.95, 10).to(device)  # iou vector for mAP@0.5:0.95
     iouv = iouv[0].view(1)  # comment for mAP@0.5:0.95
     niou = iouv.numel()
+    wdir = opt.out + os.sep
 
     # Dataloader
     if dataloader is None:
@@ -76,7 +77,7 @@ def test(cfg,
         _, _, height, width = imgs.shape  # batch size, channels, height, width
 
         # Plot images with bounding boxes
-        f = 'test_batch%g.png' % batch_i  # filename
+        f = f'{wdir}/test_batch%g.png' % batch_i  # filename
         if batch_i < 1 and not os.path.exists(f):
             plot_images(imgs=imgs, targets=targets, paths=paths, fname=f)
 
@@ -219,6 +220,7 @@ if __name__ == '__main__':
     parser.add_argument('--task', default='test', help="'test', 'study', 'benchmark'")
     parser.add_argument('--device', default='', help='device id (i.e. 0 or 0,1) or cpu')
     parser.add_argument('--single-cls', action='store_true', help='train as single-class dataset')
+    parser.add_argument('--out', type=str, default='data', help='out path for weights and images')
     opt = parser.parse_args()
     opt.save_json = opt.save_json or any([x in opt.data for x in ['coco.data', 'coco2014.data', 'coco2017.data']])
     print(opt)
