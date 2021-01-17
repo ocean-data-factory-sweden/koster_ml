@@ -16,7 +16,6 @@ from prepare_input import ProcFrameCuda, ProcFrames
 # utility functions
 def process_frames(frames_path, size=(416, 416)):
     # Run tests
-    print(frames_path)
     gpu_time_0, n_frames = ProcFrames(partial(ProcFrameCuda, size=size), frames_path)
     print(f"Processing performance: {n_frames} frames, {gpu_time_0:.2f} ms/frame")
 
