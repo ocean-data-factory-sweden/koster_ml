@@ -51,7 +51,7 @@ def detect(save_img=False):
         "models",
         db_utils.create_connection(db_path),
         conditions={
-            "config_file": f"={opt.config}",
+            "config_file": f"={opt.cfg}",
             "conf_thres": f"={opt.conf_thres}",
             "img_size": f"={opt.img_size}",
             "iou_thres": f"={opt.iou_thres}",
@@ -301,7 +301,7 @@ if __name__ == "__main__":
         type=str,
         default="mp4v",
         help="output video codec (verify ffmpeg support)",
-    )
+    )   
     parser.add_argument(
         "--half", action="store_true", help="half precision FP16 inference"
     )
