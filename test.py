@@ -237,7 +237,7 @@ if __name__ == '__main__':
              opt.iou_thres,
              opt.save_json,
              opt.single_cls,
-             opt.out)
+             out=opt.out)
 
     elif opt.task == 'benchmark':
         # mAPs at 320-608 at conf 0.5 and 0.7
