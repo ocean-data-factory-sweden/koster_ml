@@ -217,14 +217,13 @@ def detect(save_img=False):
             elif det is None or len(det) == 0:
                 n_observations.append(0)
 
-        # Export 10,000 frames per file to csv
+        # Export n frames per file to csv
         if save_obs:
-            save_img = False
             # Save model configuration
             with open(dest + "/model_config.txt", "w") as file:
                 file.write(str(opt))
 
-            if len(paths) == 10000:
+            if len(paths) == int(opt.save_nobs):
                 obs_df = pd.DataFrame(
                     np.column_stack([paths, n_observations]), columns=["path", "n"]
                 )
@@ -314,6 +313,9 @@ if __name__ == "__main__":
     )
     parser.add_argument(
         "--save-obs", action="store_true", help="saving observations for visualisation"
+    )
+    parser.add_argument(
+        "--save-nobs", type=int, default=10000, help="saves an observation file every n frames"
     )
     parser.add_argument(
         "--db-path",
