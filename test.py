@@ -18,7 +18,8 @@ def test(cfg,
          save_json=False,
          single_cls=False,
          model=None,
-         dataloader=None):
+         dataloader=None,
+         out=None):
     # Initialize/load model and set device
     if model is None:
         device = torch_utils.select_device(opt.device, batch_size=batch_size)
@@ -52,7 +53,7 @@ def test(cfg,
     iouv = torch.linspace(0.5, 0.95, 10).to(device)  # iou vector for mAP@0.5:0.95
     iouv = iouv[0].view(1)  # comment for mAP@0.5:0.95
     niou = iouv.numel()
-    wdir = opt.out + os.sep
+    wdir = out + os.sep
 
     # Dataloader
     if dataloader is None:
@@ -235,7 +236,8 @@ if __name__ == '__main__':
              opt.conf_thres,
              opt.iou_thres,
              opt.save_json,
-             opt.single_cls)
+             opt.single_cls,
+             opt.out)
 
     elif opt.task == 'benchmark':
         # mAPs at 320-608 at conf 0.5 and 0.7
