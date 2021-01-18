@@ -316,7 +316,8 @@ def train():
                                       iou_thres=0.6,
                                       save_json=final_epoch and is_coco,
                                       single_cls=opt.single_cls,
-                                      dataloader=testloader)
+                                      dataloader=testloader,
+                                      out=opt.out)
 
         # Write epoch results
         with open(results_file, 'a') as f:
