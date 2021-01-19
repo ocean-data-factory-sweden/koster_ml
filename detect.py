@@ -139,10 +139,14 @@ def detect(save_img=False):
     colors = [[random.randint(0, 255) for _ in range(3)] for _ in range(len(names))]
 
     # Run inference
-    paths, n_observations = [], []
+    paths, n_observations, complete_paths = [], [], 0
     t0 = time.time()
     fid = 0
     for path, img, im0s, vid_cap in dataset:
+        n_paths = len(dataset) // int(opt.save_nobs)
+        if len(dataset) % int(opt.save_nobs) > 0:
+            n_paths += 1
+
         paths.append(path)
         # get movie_id when using previously uploaded footage
         try:
@@ -223,13 +227,14 @@ def detect(save_img=False):
             with open(dest + "/model_config.txt", "w") as file:
                 file.write(str(opt))
 
-            if len(paths) == int(opt.save_nobs):
+            if len(paths) == int(opt.save_nobs) or complete_paths == n_paths:
                 obs_df = pd.DataFrame(
                     np.column_stack([paths, n_observations]), columns=["path", "n"]
                 )
                 obs_df.to_csv(dest + f"/{fid}_obs_summary.csv")
                 fid += 1
                 paths, n_observations = [], []
+                complete_paths += 1
 
             # Print time (inference + NMS)
             print("%sDone. (%.3fs)" % (s, time.time() - t))
