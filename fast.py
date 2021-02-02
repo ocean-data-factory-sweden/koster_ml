@@ -55,7 +55,7 @@ class KosterModel:
             now = datetime.datetime.today()
             nTime = now.strftime("%d-%m-%Y-%H-%M-%S")
             self.dest = os.path.join(self.out + "/" + nTime)
-            if not os.path.exists(dest):
+            if not os.path.exists(self.dest):
                 os.makedirs(self.dest)  # create dest dir
 
             # Initialize model
