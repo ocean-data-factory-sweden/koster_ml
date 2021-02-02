@@ -146,17 +146,17 @@ def run_the_app():
             "**YOLO v3 Model** (overlap `%3.1f`) (confidence `%3.1f`)"
             % (overlap_threshold, confidence_threshold)
         )
-        st.video(f"{m.out}/temp_{fid}.mp4")
-        os.remove(f"{m.out}/temp_{fid}.mp4")
+        st.video(selected_frame)
+        os.remove(selected_frame)
     else:
         draw_image_with_boxes(
-            fid,
+            selected_frame,
             processed_image,
             "Model Output",
             "**YOLO v3 Model** (overlap `%3.1f`) (confidence `%3.1f`)"
             % (overlap_threshold, confidence_threshold),
         )
-        os.remove(f"{m.out}/temp_{fid}.png")
+        os.remove(selected_frame)
 
 
 @st.cache(hash_funcs={np.ufunc: str})
@@ -208,7 +208,7 @@ def draw_image_with_boxes(fid, image_with_boxes, header, description):
     # Draw the header and image.
     st.subheader(header)
     st.markdown(description)
-    st.image(f"{m.out}/temp_{fid}.png", use_column_width=True)
+    st.image(selected_frame, use_column_width=True)
 
 
 if __name__ == "__main__":
