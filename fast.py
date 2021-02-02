@@ -1,5 +1,6 @@
 from fastapi import FastAPI, File, UploadFile
 from sys import platform
+import datetime
 
 from models import *  # set ONNX_EXPORT in models.py
 from utils.datasets import *
@@ -28,13 +29,13 @@ class KosterModel:
                 (320, 192) if ONNX_EXPORT else 416
             )  # (320, 192) or (416, 256) or (608, 352) for (height, width)
             self.out, self.weights, self.half, self.view_img, self.save_txt = (
-                "/data/testapi",
+                "/data/api",
                 "/data/weights/last.pt",
                 False,
                 False,
                 True,
             )
-            self.webcam = Falses
+            self.webcam = False
             (
                 self.names,
                 self.conf_thres,
@@ -49,6 +50,13 @@ class KosterModel:
             )
             if not os.path.exists(self.out):
                 os.makedirs(self.out)  # make new output folder
+
+            # Timestamp detections
+            now = datetime.datetime.today()
+            nTime = now.strftime("%d-%m-%Y-%H-%M-%S")
+            self.dest = os.path.join(self.out + "/" + nTime)
+            if not os.path.exists(dest):
+                os.makedirs(self.dest)  # create dest dir
 
             # Initialize model
             self.model = Darknet("cfg/yolov3-spp-1cls.cfg", self.img_size)
@@ -150,7 +158,7 @@ class KosterModel:
                     else:
                         p, s, im0 = path, "", im0s
 
-                    save_path = str(Path(self.out) / Path(p).name)
+                    save_path = str(Path(self.dest) / Path(p).name)
                     s += "%gx%g " % img.shape[2:]  # print string
                     if det is not None and len(det):
                         # Rescale boxes from img_size to im0 size
@@ -213,9 +221,9 @@ class KosterModel:
             my_bar.progress(perc_complete)
 
             if self.save_txt or self.save_img:
-                print("Results saved to %s" % os.getcwd() + os.sep + self.out)
+                print("Results saved to %s" % os.getcwd() + os.sep + self.dest)
                 if platform == "darwin":  # MacOS
-                    os.system("open " + self.out + " " + save_path)
+                    os.system("open " + self.dest + " " + save_path)
 
             print("Done. (%.3fs)" % (time.time() - t0))
             return im0, vid

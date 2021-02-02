@@ -38,7 +38,7 @@ def load_network():
 def run_the_app():
     @st.cache
     def load_data():
-        db_path = "/data/koster_lab-nm.db"
+        db_path = "/data/db_config/koster_lab-nm.db"
         movie_dir = "/uploads"
         conn = db_utils.create_connection(db_path)
 
@@ -79,33 +79,31 @@ def run_the_app():
         )
 
         if img_file_buffer is not None:
-            fid = random.randint(100000000000, 999999999999)
+            name = img_file_buffer.name
             # text_io = io.TextIOWrapper(img_file_buffer)
             raw_buffer = img_file_buffer.read()
             bytes_as_np_array = np.fromstring(raw_buffer, np.uint8)
             # if image
             try:
                 image = cv2.imdecode(bytes_as_np_array, -1)
-
                 # Resize the image to the size YOLO model expects
                 selected_frame = image  # cv2.resize(image, (416, 416))
 
                 # Save in a temp file as YOLO expects filepath
-                cv2.imwrite(f"/data/testapi/temp_{fid}.png", selected_frame)
-                selected_frame = f"/data/testapi/temp_{fid}.png"
+                cv2.imwrite(f"{m.dest}/{name}", selected_frame)
+                selected_frame = f"{m.dest}/{name}"
             # if video
             except:
                 video = True
 
                 with open(
-                    f"/data/temp_{fid}.mp4", "wb"
+                    f"{m.dest}/{name}", "wb"
                 ) as out_file:  # open for [w]riting as [b]inary
                     out_file.write(raw_buffer)
 
-                selected_frame = f"/data/temp_{fid}.mp4"
+                selected_frame = f"{m.dest}/{name}"
 
         else:
-
             # Show the last image
             st.error("No file uploaded. Please select a file from your computer.")
             return
@@ -129,11 +127,11 @@ def run_the_app():
 
         # Resize the image to the size YOLO model expects
         # selected_frame = cv2.resize(selected_frame, (416, 416))
-        # Save in a temp file as YOLO expects filepath
+        # Convert color space to match YOLO input
         selected_frame = cv2.cvtColor(selected_frame, cv2.COLOR_BGR2RGB)
-
-        cv2.imwrite(f"/data/testapi/temp_{fid}.png", selected_frame)
-        selected_frame = f"/data/testapi/temp_{fid}.png"
+        # Save in a temp file as YOLO expects filepath
+        cv2.imwrite(f"{m.out}/temp_{fid}.png", selected_frame)
+        selected_frame = f"{m.out}/temp_{fid}.png"
 
     # Load the image from S3.
     m.source = selected_frame
@@ -148,8 +146,8 @@ def run_the_app():
             "**YOLO v3 Model** (overlap `%3.1f`) (confidence `%3.1f`)"
             % (overlap_threshold, confidence_threshold)
         )
-        st.video(f"/data/testapi/temp_{fid}.mp4")
-        os.remove(f"/data/testapi/temp_{fid}.mp4")
+        st.video(f"{m.out}/temp_{fid}.mp4")
+        os.remove(f"{m.out}/temp_{fid}.mp4")
     else:
         draw_image_with_boxes(
             fid,
@@ -158,7 +156,7 @@ def run_the_app():
             "**YOLO v3 Model** (overlap `%3.1f`) (confidence `%3.1f`)"
             % (overlap_threshold, confidence_threshold),
         )
-        os.remove(f"/data/testapi/temp_{fid}.png")
+        os.remove(f"{m.out}/temp_{fid}.png")
 
 
 @st.cache(hash_funcs={np.ufunc: str})
@@ -210,7 +208,7 @@ def draw_image_with_boxes(fid, image_with_boxes, header, description):
     # Draw the header and image.
     st.subheader(header)
     st.markdown(description)
-    st.image(f"/data/testapi/temp_{fid}.png", use_column_width=True)
+    st.image(f"{m.out}/temp_{fid}.png", use_column_width=True)
 
 
 if __name__ == "__main__":
