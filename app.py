@@ -204,7 +204,7 @@ def object_detector_ui():
 
 
 # Draws an image with boxes overlayed to indicate the presence of cars, pedestrians etc.
-def draw_image_with_boxes(fid, image_with_boxes, header, description):
+def draw_image_with_boxes(selected_frame, image_with_boxes, header, description):
     # Draw the header and image.
     st.subheader(header)
     st.markdown(description)
