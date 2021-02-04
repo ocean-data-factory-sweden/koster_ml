@@ -97,11 +97,12 @@ def run_the_app():
                 video = True
 
                 with open(
-                    f"{m.out}/{name}", "wb"
+                    f"{os.path.dirname(m.out)}/{name}", "wb"
                 ) as out_file:  # open for [w]riting as [b]inary
                     out_file.write(raw_buffer)
 
-                selected_frame = f"{m.out}/{name}"
+                vid_out_path = f"{m.out}/{name}"
+                selected_frame = f"{os.path.dirname(m.out)}/{name}"
 
         else:
             # Show the last image
@@ -109,10 +110,10 @@ def run_the_app():
             return
 
     else:
-        if not os.path.exists(self.out + "/training_footage"):
-            os.makedirs(self.out + "/training_footage")  # create dest dir
+        if not os.path.exists("/data/api/training_footage"):
+            os.mkdir("/data/api/training_footage")  # create dest dir
         
-        m.out = m.out + "/training_footage"
+        m.out = "/data/api/training_footage"
         # Load classified data
         df = load_data()
         # Load all movies to speed up frame retrieval
@@ -149,17 +150,15 @@ def run_the_app():
             "**YOLO v3 Model** (overlap `%3.1f`) (confidence `%3.1f`)"
             % (overlap_threshold, confidence_threshold)
         )
-        st.video(selected_frame)
-        #os.remove(selected_frame)
+        st.video(vid_out_path)
+        os.remove(selected_frame)
     else:
-        draw_image_with_boxes(
-            selected_frame,
-            processed_image,
-            "Model Output",
-            "**YOLO v3 Model** (overlap `%3.1f`) (confidence `%3.1f`)"
-            % (overlap_threshold, confidence_threshold),
-        )
-        #os.remove(selected_frame)
+        # Draw the header and image.
+        st.subheader("Model Output")
+        st.markdown("**YOLO v3 Model** (overlap `%3.1f`) (confidence `%3.1f`)"
+            % (overlap_threshold, confidence_threshold))
+        st.image(selected_frame, use_column_width=True)
+        os.remove(selected_frame)
 
 
 @st.cache(hash_funcs={np.ufunc: str})
@@ -204,15 +203,6 @@ def object_detector_ui():
     )
     overlap_threshold = st.sidebar.slider("Overlap threshold", 0.0, 1.0, 0.3, 0.01)
     return confidence_threshold, overlap_threshold
-
-
-# Draws an image with boxes overlayed to indicate the presence species of interest.
-def draw_image_with_boxes(selected_frame, image_with_boxes, header, description):
-    # Draw the header and image.
-    st.subheader(header)
-    st.markdown(description)
-    st.image(selected_frame, use_column_width=True)
-
 
 if __name__ == "__main__":
     main()
