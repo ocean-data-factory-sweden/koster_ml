@@ -51,13 +51,6 @@ class KosterModel:
             if not os.path.exists(self.out):
                 os.makedirs(self.out)  # make new output folder
 
-            # Timestamp detections
-            now = datetime.datetime.today()
-            nTime = now.strftime("%d-%m-%Y-%H-%M-%S")
-            self.dest = os.path.join(self.out + "/" + nTime)
-            if not os.path.exists(self.dest):
-                os.makedirs(self.dest)  # create dest dir
-
             # Initialize model
             self.model = Darknet("cfg/yolov3-spp-1cls.cfg", self.img_size)
 
@@ -158,7 +151,7 @@ class KosterModel:
                     else:
                         p, s, im0 = path, "", im0s
 
-                    save_path = str(Path(self.dest) / Path(p).name)
+                    save_path = str(Path(self.out) / Path(p).name)
                     s += "%gx%g " % img.shape[2:]  # print string
                     if det is not None and len(det):
                         # Rescale boxes from img_size to im0 size
@@ -221,9 +214,9 @@ class KosterModel:
             my_bar.progress(perc_complete)
 
             if self.save_txt or self.save_img:
-                print("Results saved to %s" % os.getcwd() + os.sep + self.dest)
+                print("Results saved to %s" % os.getcwd() + os.sep + self.out)
                 if platform == "darwin":  # MacOS
-                    os.system("open " + self.dest + " " + save_path)
+                    os.system("open " + self.out + " " + save_path)
 
             print("Done. (%.3fs)" % (time.time() - t0))
             return im0, vid

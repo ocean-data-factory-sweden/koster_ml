@@ -90,18 +90,18 @@ def run_the_app():
                 selected_frame = image  # cv2.resize(image, (416, 416))
 
                 # Save in a temp file as YOLO expects filepath
-                cv2.imwrite(f"{m.dest}/{name}", selected_frame)
-                selected_frame = f"{m.dest}/{name}"
+                cv2.imwrite(f"{m.out}/{name}", selected_frame)
+                selected_frame = f"{m.out}/{name}"
             # if video
             except:
                 video = True
 
                 with open(
-                    f"{m.dest}/{name}", "wb"
+                    f"{m.out}/{name}", "wb"
                 ) as out_file:  # open for [w]riting as [b]inary
                     out_file.write(raw_buffer)
 
-                selected_frame = f"{m.dest}/{name}"
+                selected_frame = f"{m.out}/{name}"
 
         else:
             # Show the last image
@@ -109,8 +109,10 @@ def run_the_app():
             return
 
     else:
-        # Generate temp id
-        fid = random.randint(100000000000, 999999999999)
+        if not os.path.exists(self.out + "/training_footage"):
+            os.makedirs(self.out + "/training_footage")  # create dest dir
+        
+        m.out = m.out + "/training_footage"
         # Load classified data
         df = load_data()
         # Load all movies to speed up frame retrieval
@@ -130,8 +132,9 @@ def run_the_app():
         # Convert color space to match YOLO input
         selected_frame = cv2.cvtColor(selected_frame, cv2.COLOR_BGR2RGB)
         # Save in a temp file as YOLO expects filepath
-        cv2.imwrite(f"{m.out}/temp_{fid}.png", selected_frame)
-        selected_frame = f"{m.out}/temp_{fid}.png"
+        mbase = os.path.basename(selected_movie_path).split('.')[0]
+        cv2.imwrite(f"{m.out}/{mbase}_{selected_frame_number}.png", selected_frame)
+        selected_frame = f"{m.out}/{mbase}_{selected_frame_number}.png"
 
     # Load the image from S3.
     m.source = selected_frame
@@ -147,7 +150,7 @@ def run_the_app():
             % (overlap_threshold, confidence_threshold)
         )
         st.video(selected_frame)
-        os.remove(selected_frame)
+        #os.remove(selected_frame)
     else:
         draw_image_with_boxes(
             selected_frame,
@@ -156,7 +159,7 @@ def run_the_app():
             "**YOLO v3 Model** (overlap `%3.1f`) (confidence `%3.1f`)"
             % (overlap_threshold, confidence_threshold),
         )
-        os.remove(selected_frame)
+        #os.remove(selected_frame)
 
 
 @st.cache(hash_funcs={np.ufunc: str})
@@ -203,7 +206,7 @@ def object_detector_ui():
     return confidence_threshold, overlap_threshold
 
 
-# Draws an image with boxes overlayed to indicate the presence of cars, pedestrians etc.
+# Draws an image with boxes overlayed to indicate the presence species of interest.
 def draw_image_with_boxes(selected_frame, image_with_boxes, header, description):
     # Draw the header and image.
     st.subheader(header)
