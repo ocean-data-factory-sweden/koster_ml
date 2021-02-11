@@ -9,11 +9,10 @@ import urllib
 import numpy as np
 import pandas as pd
 import streamlit as st
-import sqlite3
+import sqlite3, pims
 import db_utils
+from collections import OrderedDict
 
-# Initialize model
-model = KosterModel()
 
 # Initialize API 
 app = FastAPI()
@@ -226,6 +225,9 @@ class KosterModel:
             print("Done. (%.3fs)" % (time.time() - t0))
             return im0, vid
 
+# Initialize model
+model = KosterModel()
+
 # Sanity request check
 @app.get("/ping")
 def ping():
@@ -263,4 +265,9 @@ async def load_data():
         )
     )
 
-    return df
+    return {"data": df.to_dict()}
+
+
+@app.post("/read")
+async def get_video_dict(file_paths: list):
+    return {"video_data": OrderedDict({i: pims.Video(i) for i in file_paths})

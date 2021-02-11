@@ -14,7 +14,7 @@ from collections import OrderedDict
 st.set_option("deprecation.showfileUploaderEncoding", False)
 
 # interact with FastAPI endpoint
-backend = "http://fastapi:8000/predict"
+backend = "http://fastapi:8000/"
 
 def main():
     # Set up appearance of sidebar
@@ -32,36 +32,29 @@ def main():
 
 
 @st.cache(allow_output_mutation=True)
-def predict(media_path: str, conf_thres: float, iou_thres: float, endpoint: str=backend):
+def predict(media_path: str, conf_thres: float, iou_thres: float, endpoint: str=backend+'/predict'):
     r = requests.post(
         endpoint, data={"media_path": media_path, "conf_thres": conf_thres, 
                           "iou_thres": iou_thres}, timeout=8000
     )
     return r
 
+@st.cache
+def load_data(endpoint=backend+'/data'):
+    r = requests.get(
+        endpoint, data={}, timeout=8000
+    )
+    return r
+
+@st.cache
+def get_video_dict(filenames: list, endpoint: str=backend+'/read'):
+    r = requests.get(
+        endpoint, data={"file_paths": filenames}, timeout=8000
+    )
+    return r
+
 
 def run_the_app():
-    @st.cache
-    def load_data():
-        db_path = "/data/db_config/koster_lab-nm.db"
-        movie_dir = "/uploads"
-        conn = db_utils.create_connection(db_path)
-
-        df = pd.read_sql_query(
-            "SELECT b.filename, b.frame_number, a.species_id, a.x_position, a.y_position, a.width, a.height FROM agg_annotations_frame AS a LEFT JOIN subjects AS b ON a.subject_id=b.id",
-            conn,
-        )
-
-        df["movie_path"] = (
-            movie_dir
-            + "/"
-            + df["filename"].apply(
-                lambda x: os.path.basename(x.rsplit("_frame_")[0]) + ".mov"
-            )
-        )
-
-        return df
-
     # Draw the UI element to select parameters for the YOLO object detector.
     confidence_threshold, overlap_threshold = object_detector_ui()
     # st.markdown(
@@ -121,7 +114,7 @@ def run_the_app():
         # Load classified data
         df = load_data()
         # Load all movies to speed up frame retrieval
-        movie_dict = OrderedDict({i: pims.Video(i) for i in df["movie_path"].unique()})
+        movie_dict = get_video_dict(df["movie_path"].unique())["video_data"]
 
         # Select a movie
         selected_movie_path, selected_movie = movie_selector_ui(movie_dict)
