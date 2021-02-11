@@ -7,7 +7,10 @@ from utils.datasets import *
 from utils.utils import *
 import urllib
 import numpy as np
+import pandas as pd
 import streamlit as st
+import sqlite3
+import db_utils
 
 # Initialize model
 model = KosterModel()
@@ -239,3 +242,25 @@ async def predict(media_path: str, conf_thres: float, iou_thres: float):
     model.iou_thres = iou_thres
     pred, vid = model.detect()
     return pred, vid
+
+
+@app.get("/data")
+async def load_data():
+    db_path = "/data/db_config/koster_lab-nm.db"
+    movie_dir = "/uploads"
+    conn = db_utils.create_connection(db_path)
+
+    df = pd.read_sql_query(
+        "SELECT b.filename, b.frame_number, a.species_id, a.x_position, a.y_position, a.width, a.height FROM agg_annotations_frame AS a LEFT JOIN subjects AS b ON a.subject_id=b.id",
+        conn,
+    )
+
+    df["movie_path"] = (
+        movie_dir
+        + "/"
+        + df["filename"].apply(
+            lambda x: os.path.basename(x.rsplit("_frame_")[0]) + ".mov"
+        )
+    )
+
+    return df
