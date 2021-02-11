@@ -9,10 +9,13 @@ import urllib
 import numpy as np
 import streamlit as st
 
+# Initialize model
+model = KosterModel()
+
+# Initialize API 
 app = FastAPI()
 
-
-def create_file(file: UploadFile = File(...)):
+async def create_file(file: UploadFile = File(...)):
     global upload_folder
     file_object = file.file
     # create empty file to copy the file_object to
@@ -20,7 +23,6 @@ def create_file(file: UploadFile = File(...)):
     shutil.copyfileobj(file_object, upload_folder)
     upload_folder.close()
     return {"filename": file.filename}
-
 
 class KosterModel:
     def __init__(self):
@@ -221,19 +223,19 @@ class KosterModel:
             print("Done. (%.3fs)" % (time.time() - t0))
             return im0, vid
 
-
+# Sanity request check
 @app.get("/ping")
 def ping():
     return {"message": "pong! your requested was heard"}
 
-
-@app.get("/predict/{media_path:path}")
-async def predict(media_path: str):
+@app.post("/predict")
+async def predict(media_path: str, conf_thres: float, iou_thres: float):
     try:
-        fn = create_file(media_path)
+        fn = await create_file(media_path)
     except:
         pass
-    m = KosterModel()
-    m.source = fn if fn else media_path
-    pred = m.detect()
-    return {"message": str(pred)}
+    model.source = fn if fn else media_path
+    model.conf_thres = conf_thres
+    model.iou_thres = iou_thres
+    pred, vid = model.detect()
+    return pred, vid
