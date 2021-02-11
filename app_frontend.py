@@ -47,11 +47,11 @@ def load_data(endpoint=backend+'/data'):
     return r
 
 @st.cache
-def get_video_dict(filenames: list, endpoint: str=backend+'/read'):
+def get_movie_frame(file_path: str, frame_number: int, endpoint: str=backend+'/read'):
     r = requests.get(
-        endpoint, data={"file_paths": filenames}, timeout=8000
+        endpoint, data={"file_path": file_path, "frame_number": frame_number}, timeout=8000
     )
-    return r
+    return r["frame_data"]
 
 
 def run_the_app():
@@ -114,16 +114,16 @@ def run_the_app():
         # Load classified data
         df = load_data()
         # Load all movies to speed up frame retrieval
-        movie_dict = get_video_dict(df["movie_path"].unique())["video_data"]
+        movie_list = [i for i in df["movie_path"].unique()]
 
         # Select a movie
-        selected_movie_path, selected_movie = movie_selector_ui(movie_dict)
+        selected_movie_path = movie_selector_ui(movie_list)
         movie_frames = get_selected_frames(df, selected_movie_path)
 
         # Select frame
         selected_frame_index = frame_selector_ui(movie_frames)
         selected_frame_number = movie_frames.iloc[selected_frame_index]
-        selected_frame = selected_movie[selected_frame_number]
+        selected_frame = get_movie_frame(selected_movie_path, selected_frame_number)
 
         # Resize the image to the size YOLO model expects
         # selected_frame = cv2.resize(selected_frame, (416, 416))
@@ -165,13 +165,13 @@ def movie_selector_ui(movie_dict):
 
     # Choose a movie out of the selected movies.
     selected_movie_index = st.sidebar.slider(
-        "Choose a movie (index)", 0, len(movie_dict) - 1, 0
+        "Choose a movie (index)", 0, len(movie_list) - 1, 0
     )
 
-    selected_movie_path, selected_movie = list(movie_dict.items())[selected_movie_index]
+    selected_movie_path = movie_list[selected_movie_index]
     st.sidebar.markdown(f"Selected movie: {os.path.basename(selected_movie_path)}")
 
-    return selected_movie_path, selected_movie
+    return selected_movie_path
 
 
 # This sidebar UI is a little search engine to find certain object types.

@@ -1,6 +1,7 @@
-from fastapi import FastAPI, File, UploadFile
+from fastapi import FastAPI, File, UploadFile, Query
+from typing import List
 from sys import platform
-import datetime
+import datetime, os, json
 
 from models import *  # set ONNX_EXPORT in models.py
 from utils.datasets import *
@@ -236,10 +237,10 @@ def ping():
 @app.post("/predict")
 async def predict(media_path: str, conf_thres: float, iou_thres: float):
     try:
-        fn = await create_file(media_path)
+        media_path = await create_file(media_path)
     except:
         pass
-    model.source = fn if fn else media_path
+    model.source = media_path
     model.conf_thres = conf_thres
     model.iou_thres = iou_thres
     pred, vid = model.detect()
@@ -268,6 +269,6 @@ async def load_data():
     return {"data": df.to_dict()}
 
 
-@app.post("/read")
-async def get_video_dict(file_paths: list):
-    return {"video_data": OrderedDict({i: pims.Video(i) for i in file_paths})
+@app.get("/read")
+async def get_movie_frame(file_path: str, frame_number: int):
+    return {"frame_data": json.dumps(pims.Video(file_path)[frame_number]).tolist()}
