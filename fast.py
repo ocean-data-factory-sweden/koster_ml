@@ -244,7 +244,7 @@ async def predict(media_path: str, conf_thres: float, iou_thres: float):
     model.conf_thres = conf_thres
     model.iou_thres = iou_thres
     pred, vid = model.detect()
-    return pred, vid
+    return {"prediction": json.dumps(pred.tolist())}
 
 
 @app.get("/data")
@@ -271,4 +271,4 @@ async def load_data():
 
 @app.get("/read")
 async def get_movie_frame(file_path: str, frame_number: int):
-    return {"frame_data": json.dumps(pims.Video(file_path)[frame_number]).tolist()}
+    return {"frame_data": json.dumps(np.array(pims.Video(file_path)[frame_number]).tolist())}

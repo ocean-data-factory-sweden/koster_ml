@@ -37,21 +37,21 @@ def predict(media_path: str, conf_thres: float, iou_thres: float, endpoint: str=
         endpoint, data={"media_path": media_path, "conf_thres": conf_thres, 
                           "iou_thres": iou_thres}, timeout=8000
     )
-    return r
+    return np.array(json.loads(r["prediction"]))
 
 @st.cache
 def load_data(endpoint=backend+'/data'):
     r = requests.get(
         endpoint, data={}, timeout=8000
     )
-    return r
+    return pd.from_dict(r["data"])
 
 @st.cache
 def get_movie_frame(file_path: str, frame_number: int, endpoint: str=backend+'/read'):
     r = requests.get(
         endpoint, data={"file_path": file_path, "frame_number": frame_number}, timeout=8000
     )
-    return r["frame_data"]
+    return np.array(json.loads(r["frame_data"]))
 
 
 def run_the_app():
