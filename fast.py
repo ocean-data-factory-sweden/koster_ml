@@ -275,12 +275,12 @@ async def get_movie_frame(file_path: str, frame_number: int):
 
 @app.post("/save")
 async def save_image(file_name: str, file_data):
-    cv2.imwrite(f"{model.out}/{file_name}", np.array(json.loads(file_data)))
+    cv2.imwrite(f"{model.out}/{file_name}", np.frombuffer(file_data))
     return {"output": f"{model.out}/{file_name}"}
 
 @app.post("/save_vid")
 async def save_video(file_name: str, file_data):
     with open(f"{os.path.dirname(model.out)}/{file_name}", "wb"
                 ) as out_file:  # open for [w]riting as [b]inary
-                    out_file.write(file_data)
+                    out_file.write(np.frombuffer(file_data))
     return {"output": f"{model.out}/{file_name}"}
