@@ -1,4 +1,5 @@
 from fastapi import FastAPI, File, UploadFile, Query
+from pydantic import BaseModel
 from typing import List
 from sys import platform
 import datetime, os, json
@@ -14,6 +15,8 @@ import sqlite3, pims
 import db_utils
 from collections import OrderedDict
 
+class Item(BaseModel):
+    file_data: str
 
 # Initialize API 
 app = FastAPI()
@@ -274,13 +277,13 @@ async def get_movie_frame(file_path: str, frame_number: int):
     return {"frame_data": json.dumps(np.array(pims.Video(file_path)[frame_number]).tolist())}
 
 @app.post("/save")
-async def save_image(file_name: str, file_data):
-    cv2.imwrite(f"{model.out}/{file_name}", np.frombuffer(file_data))
+async def save_image(file_name: str, item: Item):
+    cv2.imwrite(f"{model.out}/{file_name}", np.array(json.loads(item.__dict__["file_data"])))
     return {"output": f"{model.out}/{file_name}"}
 
 @app.post("/save_vid")
-async def save_video(file_name: str, file_data):
+async def save_video(file_name: str, item: Item):
     with open(f"{os.path.dirname(model.out)}/{file_name}", "wb"
                 ) as out_file:  # open for [w]riting as [b]inary
-                    out_file.write(np.frombuffer(file_data))
+                    out_file.write(np.array(np.array(json.loads(item.__dict__["file_data"]))))
     return {"output": f"{model.out}/{file_name}"}
