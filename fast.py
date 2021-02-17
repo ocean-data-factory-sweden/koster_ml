@@ -15,11 +15,12 @@ import sqlite3, pims
 import db_utils
 from collections import OrderedDict
 
+
+# Initialize API
+app = FastAPI()
+
 class Item(BaseModel):
     file_data: str
-
-# Initialize API 
-app = FastAPI()
 
 async def create_file(file: UploadFile = File(...)):
     global upload_folder
@@ -102,7 +103,7 @@ class KosterModel:
     def detect(self, save_img=False):
         boxes = []
         vid = False
-        my_bar = st.progress(0)
+        #my_bar = st.progress(0)
         with torch.no_grad():
             # Set Dataloader
             vid_path, vid_writer = None, None
@@ -197,20 +198,24 @@ class KosterModel:
                     # Save results (image with detections)
                     if self.save_img:
                         if dataset.mode == "images":
-                            cv2.imwrite(save_path, im0)
+                            print("image")
+                        #    cv2.imwrite(save_path, im0)
                         else:
                             vid = True
                             if vid_path != save_path:  # new video
                                 vid_path = save_path
                                 if isinstance(vid_writer, cv2.VideoWriter):
                                     vid_writer.release()  # release previous video writer
-
+                                if not os.path.isdir(Path(self.out)/"videos"):
+                                    os.mkdir(Path(self.out)/"videos")
+                                nvid_path = str(Path(self.out)/"videos"/Path(p).name)
+                                #extension = os.path.splitext(nvid_path)[1]
+                                #nvid_path = nvid_path.replace(extension, '.avi')
                                 fps = vid_cap.get(cv2.CAP_PROP_FPS)
-
                                 w = int(vid_cap.get(cv2.CAP_PROP_FRAME_WIDTH))
                                 h = int(vid_cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
                                 vid_writer = cv2.VideoWriter(
-                                    save_path,
+                                    nvid_path,
                                     cv2.VideoWriter_fourcc(*"h264"),
                                     fps,
                                     (w, h),
@@ -220,6 +225,8 @@ class KosterModel:
             i += 1
             perc_complete = i / len(dataset)
             my_bar.progress(perc_complete)
+            if vid:
+                vid_writer.release()
 
             if self.save_txt or self.save_img:
                 print("Results saved to %s" % os.getcwd() + os.sep + self.out)
@@ -227,7 +234,10 @@ class KosterModel:
                     os.system("open " + self.out + " " + save_path)
 
             print("Done. (%.3fs)" % (time.time() - t0))
-            return im0, vid
+            if vid:
+                return open(nvid_path, 'rb').read(), vid
+            else:
+                return im0, vid
 
 # Initialize model
 model = KosterModel()
@@ -247,7 +257,11 @@ async def predict(media_path: str, conf_thres: float, iou_thres: float):
     model.conf_thres = conf_thres
     model.iou_thres = iou_thres
     pred, vid = model.detect()
-    return {"prediction": json.dumps(pred.tolist())}
+    if vid:
+        pred = list(pred)
+    else:
+        pred = pred.tolist()
+    return {"vid": vid, "prediction": pred}
 
 
 @app.get("/data")
@@ -282,8 +296,7 @@ async def save_image(file_name: str, item: Item):
     return {"output": f"{model.out}/{file_name}"}
 
 @app.post("/save_vid")
-async def save_video(file_name: str, item: Item):
-    with open(f"{os.path.dirname(model.out)}/{file_name}", "wb"
-                ) as out_file:  # open for [w]riting as [b]inary
-                    out_file.write(np.array(np.array(json.loads(item.__dict__["file_data"]))))
+async def save_video(file_name: str, fps: int, w: int, h: int, file_data = File(...)):
+    with open(f"{model.out}/{file_name}", "wb") as out_file:
+        out_file.write(file_data.file.read())
     return {"output": f"{model.out}/{file_name}"}
