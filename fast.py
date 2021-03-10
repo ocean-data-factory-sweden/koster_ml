@@ -103,6 +103,7 @@ class KosterModel:
     def detect(self, save_img=False):
         boxes = []
         vid = False
+        detect_dict = {}
         #my_bar = st.progress(0)
         with torch.no_grad():
             # Set Dataloader
@@ -126,6 +127,7 @@ class KosterModel:
             # Run inference
             t0 = time.time()
             for path, img, im0s, vid_cap in dataset:
+                detect_dict[path] = []
                 t = time.time()
                 img = torch.from_numpy(img).to(self.device)
                 img = img.half() if self.half else img.float()  # uint8 to fp16/32
@@ -176,6 +178,7 @@ class KosterModel:
                         # Write results
                         for *xyxy, conf, cls in det:
                             boxes.append(xyxy)
+                            detect_dict[path].append([xyxy, cls, conf])
                             if self.save_txt:  # Write to file
                                 with open(save_path + ".txt", "a") as file:
                                     file.write(("%g " * 6 + "\n") % (*xyxy, cls, conf))
@@ -237,7 +240,7 @@ class KosterModel:
             if vid:
                 return open(nvid_path, 'rb').read(), vid
             else:
-                return im0, vid
+                return im0, vid, detect_dict
 
 # Initialize model
 model = KosterModel()
@@ -261,7 +264,7 @@ async def predict(media_path: str, conf_thres: float, iou_thres: float):
         pred = list(pred)
     else:
         pred = pred.tolist()
-    return {"vid": vid, "prediction": pred}
+    return {"vid": vid, "prediction": pred, "prediction_dict": detect_dict}
 
 
 @app.get("/data")
