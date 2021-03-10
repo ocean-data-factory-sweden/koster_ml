@@ -259,7 +259,7 @@ async def predict(media_path: str, conf_thres: float, iou_thres: float):
     model.source = media_path
     model.conf_thres = conf_thres
     model.iou_thres = iou_thres
-    pred, vid = model.detect()
+    pred, vid, detect_dict = model.detect()
     if vid:
         pred = list(pred)
     else:
