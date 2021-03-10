@@ -104,7 +104,7 @@ class KosterModel:
         boxes = []
         vid = False
         detect_dict = {}
-        #my_bar = st.progress(0)
+        my_bar = st.progress(0)
         with torch.no_grad():
             # Set Dataloader
             vid_path, vid_writer = None, None
