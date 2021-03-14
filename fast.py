@@ -18,10 +18,12 @@ from collections import OrderedDict
 
 # Initialize API
 app = FastAPI()
+upload_folder = "/data/api"
 
 class Item(BaseModel):
     file_data: str
 
+@app.post("/create_file")
 async def create_file(file: UploadFile = File(...)):
     global upload_folder
     file_object = file.file
@@ -127,7 +129,8 @@ class KosterModel:
             # Run inference
             t0 = time.time()
             for path, img, im0s, vid_cap in dataset:
-                detect_dict[path] = []
+                if not path in detect_dict:
+                    detect_dict[path] = []
                 t = time.time()
                 img = torch.from_numpy(img).to(self.device)
                 img = img.half() if self.half else img.float()  # uint8 to fp16/32
@@ -178,7 +181,7 @@ class KosterModel:
                         # Write results
                         for *xyxy, conf, cls in det:
                             boxes.append(xyxy)
-                            detect_dict[path].append([xyxy, cls, conf])
+                            detect_dict[path].append([i, [i.item() for i in xyxy], cls.item(), conf.item()])
                             if self.save_txt:  # Write to file
                                 with open(save_path + ".txt", "a") as file:
                                     file.write(("%g " * 6 + "\n") % (*xyxy, cls, conf))
@@ -238,7 +241,7 @@ class KosterModel:
 
             print("Done. (%.3fs)" % (time.time() - t0))
             if vid:
-                return open(nvid_path, 'rb').read(), vid
+                return open(nvid_path, 'rb').read(), vid, detect_dict
             else:
                 return im0, vid, detect_dict
 
