@@ -174,6 +174,7 @@ class KosterModel:
                         ).round()
 
                         # Print results
+                        i += 1
                         for c in det[:, -1].unique():
                             n = (det[:, -1] == c).sum()  # detections per class
                             s += "%g %ss, " % (n, names[int(c)])  # add to string
@@ -181,7 +182,8 @@ class KosterModel:
                         # Write results
                         for *xyxy, conf, cls in det:
                             boxes.append(xyxy)
-                            detect_dict[path].append([i, [i.item() for i in xyxy], cls.item(), conf.item()])
+                            if n.item() > 0:
+                                detect_dict[path].append([i, [i.item() for i in xyxy], cls.item(), conf.item()])
                             if self.save_txt:  # Write to file
                                 with open(save_path + ".txt", "a") as file:
                                     file.write(("%g " * 6 + "\n") % (*xyxy, cls, conf))
