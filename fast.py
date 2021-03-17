@@ -20,8 +20,10 @@ from collections import OrderedDict
 app = FastAPI()
 upload_folder = "/data/api"
 
+
 class Item(BaseModel):
     file_data: str
+
 
 @app.post("/create_file")
 async def create_file(file: UploadFile = File(...)):
@@ -32,6 +34,7 @@ async def create_file(file: UploadFile = File(...)):
     shutil.copyfileobj(file_object, upload_folder)
     upload_folder.close()
     return {"filename": file.filename}
+
 
 class KosterModel:
     def __init__(self):
@@ -125,10 +128,15 @@ class KosterModel:
             colors = [
                 [random.randint(0, 255) for _ in range(3)] for _ in range(len(names))
             ]
+            # Initialize frame counter
+            fcount = 0
 
             # Run inference
             t0 = time.time()
             for path, img, im0s, vid_cap in dataset:
+                # Increment frame
+                fcount += 1
+                # Create output dict for each file
                 if not path in detect_dict:
                     detect_dict[path] = []
                 t = time.time()
@@ -183,7 +191,14 @@ class KosterModel:
                         for *xyxy, conf, cls in det:
                             boxes.append(xyxy)
                             if n.item() > 0:
-                                detect_dict[path].append([i, [i.item() for i in xyxy], cls.item(), conf.item()])
+                                detect_dict[path].append(
+                                    [
+                                        fcount,
+                                        [i.item() for i in xyxy],
+                                        cls.item(),
+                                        conf.item(),
+                                    ]
+                                )
                             if self.save_txt:  # Write to file
                                 with open(save_path + ".txt", "a") as file:
                                     file.write(("%g " * 6 + "\n") % (*xyxy, cls, conf))
@@ -214,11 +229,13 @@ class KosterModel:
                                 vid_path = save_path
                                 if isinstance(vid_writer, cv2.VideoWriter):
                                     vid_writer.release()  # release previous video writer
-                                if not os.path.isdir(Path(self.out)/"videos"):
-                                    os.mkdir(Path(self.out)/"videos")
-                                nvid_path = str(Path(self.out)/"videos"/Path(p).name)
-                                #extension = os.path.splitext(nvid_path)[1]
-                                #nvid_path = nvid_path.replace(extension, '.avi')
+                                if not os.path.isdir(Path(self.out) / "videos"):
+                                    os.mkdir(Path(self.out) / "videos")
+                                nvid_path = str(
+                                    Path(self.out) / "videos" / Path(p).name
+                                )
+                                # extension = os.path.splitext(nvid_path)[1]
+                                # nvid_path = nvid_path.replace(extension, '.avi')
                                 fps = vid_cap.get(cv2.CAP_PROP_FPS)
                                 w = int(vid_cap.get(cv2.CAP_PROP_FRAME_WIDTH))
                                 h = int(vid_cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
@@ -243,9 +260,10 @@ class KosterModel:
 
             print("Done. (%.3fs)" % (time.time() - t0))
             if vid:
-                return open(nvid_path, 'rb').read(), vid, detect_dict
+                return open(nvid_path, "rb").read(), vid, detect_dict
             else:
                 return im0, vid, detect_dict
+
 
 # Initialize model
 model = KosterModel()
@@ -255,6 +273,8 @@ model = KosterModel()
 def ping():
     return {"message": "pong! your requested was heard"}
 
+
+# Main prediction function
 @app.post("/predict")
 async def predict(media_path: str, conf_thres: float, iou_thres: float):
     try:
@@ -272,6 +292,7 @@ async def predict(media_path: str, conf_thres: float, iou_thres: float):
     return {"vid": vid, "prediction": pred, "prediction_dict": detect_dict}
 
 
+# Loading uploaded videos from database utility function
 @app.get("/data")
 async def load_data():
     db_path = "/data/db_config/koster_lab-nm.db"
@@ -294,17 +315,24 @@ async def load_data():
     return {"data": df.to_dict()}
 
 
+# Utility function for single frame
 @app.get("/read")
 async def get_movie_frame(file_path: str, frame_number: int):
-    return {"frame_data": json.dumps(np.array(pims.Video(file_path)[frame_number]).tolist())}
+    return {
+        "frame_data": json.dumps(np.array(pims.Video(file_path)[frame_number]).tolist())
+    }
+
 
 @app.post("/save")
 async def save_image(file_name: str, item: Item):
-    cv2.imwrite(f"{model.out}/{file_name}", np.array(json.loads(item.__dict__["file_data"])))
+    cv2.imwrite(
+        f"{model.out}/{file_name}", np.array(json.loads(item.__dict__["file_data"]))
+    )
     return {"output": f"{model.out}/{file_name}"}
 
+
 @app.post("/save_vid")
-async def save_video(file_name: str, fps: int, w: int, h: int, file_data = File(...)):
+async def save_video(file_name: str, fps: int, w: int, h: int, file_data=File(...)):
     with open(f"{model.out}/{file_name}", "wb") as out_file:
         out_file.write(file_data.file.read())
     return {"output": f"{model.out}/{file_name}"}
