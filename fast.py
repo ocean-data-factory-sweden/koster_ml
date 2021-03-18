@@ -182,7 +182,6 @@ class KosterModel:
                         ).round()
 
                         # Print results
-                        i += 1
                         for c in det[:, -1].unique():
                             n = (det[:, -1] == c).sum()  # detections per class
                             s += "%g %ss, " % (n, names[int(c)])  # add to string
