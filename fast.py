@@ -261,7 +261,14 @@ class KosterModel:
             if vid:
                 return open(nvid_path, "rb").read(), vid, detect_dict
             else:
-                return im0, vid, detect_dict
+                # Compress image before transfer
+                width = 416
+                (h, w) = im0.shape[:2]
+                r = width / float(w)
+                dim = (width, int(h * r))
+                # resize the image
+                resized = cv2.resize(im0, dim, interpolation = cv2.INTER_AREA)
+                return resized, vid, detect_dict
 
 
 # Initialize model
@@ -323,15 +330,16 @@ async def get_movie_frame(file_path: str, frame_number: int):
 
 
 @app.post("/save")
-async def save_image(file_name: str, item: Item):
-    cv2.imwrite(
-        f"{model.out}/{file_name}", np.array(json.loads(item.__dict__["file_data"]))
-    )
+async def save_image(file_name: str, file_data=File(...)):
+    if not os.path.isfile(f"{model.out}/{file_name}"):
+        with open(f"{model.out}/{file_name}", "wb") as out_file:
+            out_file.write(file_data.file.read())
     return {"output": f"{model.out}/{file_name}"}
 
 
 @app.post("/save_vid")
 async def save_video(file_name: str, fps: int, w: int, h: int, file_data=File(...)):
-    with open(f"{model.out}/{file_name}", "wb") as out_file:
-        out_file.write(file_data.file.read())
+    if not os.path.isfile(f"{model.out}/{file_name}"):
+        with open(f"{model.out}/{file_name}", "wb") as out_file:
+            out_file.write(file_data.file.read())
     return {"output": f"{model.out}/{file_name}"}
