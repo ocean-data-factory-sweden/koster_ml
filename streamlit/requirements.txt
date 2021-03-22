@@ -1,0 +1,8 @@
+streamlit==0.68.0 
+requests==2.24.0
+requests-toolbelt==0.9.1
+pandas
+numpy
+opencv-python-headless
+-e git+https://github.com/soft-matter/pims.git#egg=PIMS
+av
