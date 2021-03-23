@@ -2,6 +2,7 @@ version: '3'
 services:
   fastapi:
     build: fastapi/
+    platform: linux/amd64
     ports:
       - '5000:5000'
     volumes:
@@ -12,6 +13,7 @@ services:
     container_name: fastapi
   streamlit:
     build: streamlit/
+    platform: linux/amd64
     depends_on:
       - fastapi
     ports:

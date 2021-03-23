@@ -1,8 +1,9 @@
+#!/bin/bash
 # Koster Object Detection Dockerfile
 # author: Jannes Germishuys
 
 # Start FROM Nvidia PyTorch image https://ngc.nvidia.com/catalog/containers/nvidia:pytorch
-FROM nvcr.io/nvidia/pytorch:20.02-py3
+FROM --platform=linux/amd64 nvcr.io/nvidia/pytorch:20.02-py3
 
 MAINTAINER Jannes Germishuys jurie.germishuys@combine.se
 
