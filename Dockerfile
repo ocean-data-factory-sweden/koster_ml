@@ -7,7 +7,8 @@ FROM nvcr.io/nvidia/pytorch:20.12-py3
 MAINTAINER Jannes Germishuys jurie.germishuys@combine.se
 
 #CUDA requirements
-
+ENV TZ=Europe/Stockholm
+RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
 RUN apt-get update &&\
     apt-get -y upgrade &&\
     apt-get -y install build-essential cmake unzip pkg-config &&\
