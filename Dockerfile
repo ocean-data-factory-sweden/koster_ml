@@ -2,7 +2,7 @@
 # author: Jannes Germishuys
 
 # Start FROM Nvidia PyTorch image https://ngc.nvidia.com/catalog/containers/nvidia:pytorch
-FROM nvcr.io/nvidia/pytorch:20.02-py3
+FROM nvcr.io/nvidia/pytorch:20.12-py3
 
 MAINTAINER Jannes Germishuys jurie.germishuys@combine.se
 
@@ -17,6 +17,7 @@ RUN apt-get update &&\
     apt-get -y install libgtk-3-dev &&\
     apt-get -y install libcanberra-gtk* &&\
     apt-get -y install libatlas-base-dev gfortran &&\
+    apt-get -y install screen libgl1-mesa-glx &&\
     apt-get -y install python3-dev &&\
 
     cd ~ &&\
