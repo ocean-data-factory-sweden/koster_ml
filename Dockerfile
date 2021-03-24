@@ -19,7 +19,7 @@ RUN apt-get update &&\
     apt-get -y install libcanberra-gtk* &&\
     apt-get -y install libatlas-base-dev gfortran &&\
     apt-get -y install screen libgl1-mesa-glx &&\
-    apt-get -y install python3.8-dev &&\
+    apt-get -y install python3.8-dev
 
 # Set new environment reference
 ENV PYTHONPATH "/usr/local/lib/python3.8/site-packages/cv2/python-3.8/:${PYTHONPATH}"
