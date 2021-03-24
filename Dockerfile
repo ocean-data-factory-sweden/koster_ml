@@ -43,8 +43,8 @@ RUN apt-get update &&\
         -D INSTALL_PYTHON_EXAMPLES=OFF \
         -D BUILD_OPENCV_PYTHON3=ON \
         -D PYTHON3_EXECUTABLE=/opt/conda/bin/python \
-        -D PYTHON3_INCLUDE_PATH=/opt/conda/include/python3.6m \
-        -D PYTHON3_LIBRARIES=/opt/conda/lib/python3.6/site-packages \
+        -D PYTHON3_INCLUDE_PATH=/opt/conda/include/python3.8m \
+        -D PYTHON3_LIBRARIES=/opt/conda/lib/python3.8/site-packages \
         -D BUILD_EXAMPLES=OFF .. && \
 
     make -j"$(nproc)" && \
@@ -55,7 +55,7 @@ RUN apt-get update &&\
 RUN rm -rf ~/opencv* 
 
 # Set new environment reference
-ENV PYTHONPATH "/usr/local/lib/python3.6/site-packages/cv2/python-3.6/:${PYTHONPATH}"
+ENV PYTHONPATH "/usr/local/lib/python3.8/site-packages/cv2/python-3.8/:${PYTHONPATH}"
 ENV PYTHONPATH="${PYTHONPATH}:/usr/src/app/koster_ml/src"
 
 # Confirm path
