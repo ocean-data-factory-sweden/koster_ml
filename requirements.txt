@@ -19,7 +19,7 @@ python-multipart
 # additional requirements for forward-compatibility
 wandb
 Cython
-PyYAML>=5.3
+#PyYAML>=5.3
 scipy>=1.4.1
 tensorboard>=2.2
 torch>=1.7.0
