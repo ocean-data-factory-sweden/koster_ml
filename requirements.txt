@@ -8,7 +8,7 @@ pycocotools
 tqdm
 pillow
 jupyter
--e git+https://github.com/soft-matter/pims.git#egg=PIMS
+PIMS @ git+https://github.com/soft-matter/pims.git#egg=PIMS
 av
 fastapi
 uvicorn
