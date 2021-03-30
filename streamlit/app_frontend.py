@@ -53,7 +53,7 @@ st.markdown(hide_streamlit_style, unsafe_allow_html=True)
 st.set_option("deprecation.showfileUploaderEncoding", False)
 
 # interact with FastAPI endpoint
-backend = "http://018ff249e9ee.ngrok.io"
+backend = "http://fastapi:5000"
 
 
 def main():

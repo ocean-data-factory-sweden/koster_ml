@@ -6,6 +6,7 @@ services:
     ports:
       - '5000:5000'
     volumes:
+      - '/koster:/usr/src/app/koster'
       - './model_config:/data'
       - './uploads:/uploads'
     networks:
