@@ -2,11 +2,23 @@ version: '3'
 services:
   fastapi:
     build: fastapi/
+    init: true
+    ipc: host
     platform: linux/amd64
+    runtime: nvidia
+    environment:
+      - NVIDIA_VISIBLE_DEVICES=all
+    deploy:
+      resources:
+        reservations:
+          devices:
+          - driver: nvidia
+            count: 1
+            capabilities: [gpu]
     ports:
-      - '5000:5000'
+      - 5000:5000
     volumes:
-      - '/koster:/usr/src/app/koster'
+      - './koster:/usr/src/app/koster'
       - './model_config:/data'
       - './uploads:/uploads'
     networks:
@@ -18,7 +30,7 @@ services:
     depends_on:
       - fastapi
     ports:
-      - '8501:8501'
+      - 8501:8501
     volumes:
       - './model_config:/data'
       - './uploads:/uploads'
@@ -28,3 +40,4 @@ services:
 networks:
   deploy_network:
     driver: bridge
+

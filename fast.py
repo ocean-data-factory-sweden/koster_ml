@@ -240,7 +240,7 @@ class KosterModel:
                                 h = int(vid_cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
                                 vid_writer = cv2.VideoWriter(
                                     nvid_path,
-                                    cv2.VideoWriter_fourcc(*"h264"),
+                                    cv2.VideoWriter_fourcc(*"avc1"),
                                     fps,
                                     (w, h),
                                 )
