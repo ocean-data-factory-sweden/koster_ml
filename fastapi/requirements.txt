@@ -2,19 +2,31 @@
 numpy
 #opencv-python >= 4.1
 #opencv-contrib-python
-torch >= 1.4
+#torch >= 1.4
 matplotlib
 pycocotools
 tqdm
 pillow
 jupyter
--e git+https://github.com/soft-matter/pims.git#egg=PIMS
+PIMS @ git+https://github.com/soft-matter/pims.git#egg=PIMS
 av
 fastapi
 uvicorn
 streamlit
 protobuf
 python-multipart
+scikit-video
+
+# additional requirements for forward-compatibility
+wandb
+Cython
+#PyYAML>=5.3
+scipy>=1.4.1
+tensorboard>=2.2
+#torch>=1.7.0
+#torchvision>=0.8.1
+seaborn>=0.11.0
+pandas
 
 
 # Nvidia Apex (optional) for mixed precision training --------------------------
@@ -31,3 +43,4 @@ python-multipart
 # conda install -yc spyder-ide spyder-line-profiler
 # conda install -yc pytorch pytorch torchvision
 # conda install -yc conda-forge protobuf numpy && pip install onnx  # https://github.com/onnx/onnx#linux-and-macos
+

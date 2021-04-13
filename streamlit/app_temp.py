@@ -4,11 +4,11 @@ import pandas as pd
 import numpy as np
 import os, requests, cv2, json
 import pims
-import base64, zlib
+import base64
 from PIL import Image
 
 # Set app config
-st.set_page_config(
+st.beta_set_page_config(
     page_title="Koster Object Detector App", page_icon="assets/favicon-16x16.png"
 )
 
@@ -29,7 +29,11 @@ footer:after {
 	padding: 5px;
 	top: 2px;
 }
-            .css-1tdez3t {
+            .sidebar .sidebar-content {
+    background-color: #f0f2f6;
+    background-image: linear-gradient(
+180deg
+,#f0f2f6,#fafafa);
     background-attachment: fixed;
     box-sizing: border-box;
     flex-shrink: 0;
@@ -49,7 +53,7 @@ st.markdown(hide_streamlit_style, unsafe_allow_html=True)
 st.set_option("deprecation.showfileUploaderEncoding", False)
 
 # interact with FastAPI endpoint
-backend = "http://fastapi:5000"
+backend = "http://018ff249e9ee.ngrok.io"
 
 
 def main():
@@ -81,10 +85,10 @@ def predict(
             "conf_thres": conf_thres,
             "iou_thres": iou_thres,
         },
-        timeout=8000,
+        timeout=None,
     )
     return (
-        r.json()["prediction"],
+        np.array(r.json()["prediction"]),
         r.json()["vid"],
         r.json()["prediction_dict"],
     )
@@ -134,8 +138,8 @@ def save_video(
     r = requests.post(
         endpoint,
         params={"file_name": file_name, "fps": fps, "w": w, "h": h},
-        files={"file_data": zlib.compress(file_data)},
-        timeout=8000,
+        files={"file_data": file_data},
+        timeout=None,
     )
     return r.json()["output"]
 
@@ -196,7 +200,7 @@ def run_the_app():
             name = img_file_buffer.name
             im = os.path.splitext(name)[1].lower() in [".png", ".jpg", ".jpeg"]
             # text_io = io.TextIOWrapper(img_file_buffer)
-            #raw_buffer = img_file_buffer.read()
+            raw_buffer = img_file_buffer.read()
 
             if im:
                 try:
@@ -206,7 +210,7 @@ def run_the_app():
                     # selected_frame = np.float32(image)
                     # selected_frame = cv2.cvtColor(selected_frame, cv2.COLOR_BGR2RGB)
                     # Save in a temp file as YOLO expects filepath
-                    selected_frame = save_image(f"{name}", img_file_buffer.read())
+                    selected_frame = save_image(f"{name}", raw_buffer)
                 except:
                     selected_frame = f"/data/api/{name}"
 
@@ -216,14 +220,14 @@ def run_the_app():
                     with open(
                         f"temp_{name}", "wb"
                     ) as out_file:  # open for [w]riting as [b]inary
-                        out_file.write(img_file_buffer.read())
+                        out_file.write(raw_buffer)
 
                     vid_cap = cv2.VideoCapture(f"temp_{name}")
                     fps = int(vid_cap.get(cv2.CAP_PROP_FPS))
                     w = int(vid_cap.get(cv2.CAP_PROP_FRAME_WIDTH))
                     h = int(vid_cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
                     assert fps > 0
-                    selected_frame = save_video(f"{name}", img_file_buffer.read(), fps, w, h)
+                    selected_frame = save_video(f"{name}", raw_buffer, fps, w, h)
                     os.remove(f"temp_{name}")
                 except:
                     selected_frame = f"/data/api/{name}"
@@ -277,8 +281,7 @@ def run_the_app():
             "**YOLO v3 Model** (overlap `%3.1f`) (confidence `%3.1f`)"
             % (overlap_threshold, confidence_threshold)
         )
-        st.video("".join(processed_image))
-        #st.video(bytes(list(processed_image)))
+        st.video(bytes(list(processed_image)))
         st.markdown(get_table_download_link(detect_dict), unsafe_allow_html=True)
         # os.remove(selected_frame)
     else:

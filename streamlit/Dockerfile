@@ -19,4 +19,4 @@ RUN ls -l
 
 EXPOSE 8501
 
-CMD ["streamlit", "run", "app_frontend.py", "--server.port",  "$PORT"]
+CMD ["streamlit", "run", "app_frontend.py", "--server.enableCORS", "false", "--server.enableXsrfProtection", "false", "--server.port",  "8501", "--server.maxUploadSize", "400"]

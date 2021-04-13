@@ -2,7 +2,7 @@ from fastapi import FastAPI, File, UploadFile, Query
 from pydantic import BaseModel
 from typing import List
 from sys import platform
-import datetime, os, json
+import datetime, os, json, zlib
 
 from models import *  # set ONNX_EXPORT in models.py
 from utils.datasets import *
@@ -14,6 +14,7 @@ import streamlit as st
 import sqlite3, pims
 import db_utils
 from collections import OrderedDict
+import skvideo.io
 
 
 # Initialize API
@@ -110,6 +111,7 @@ class KosterModel:
         vid = False
         detect_dict = {}
         my_bar = st.progress(0)
+        vid_bar = st.progress(0)
         with torch.no_grad():
             # Set Dataloader
             vid_path, vid_writer = None, None
@@ -226,8 +228,8 @@ class KosterModel:
                             vid = True
                             if vid_path != save_path:  # new video
                                 vid_path = save_path
-                                if isinstance(vid_writer, cv2.VideoWriter):
-                                    vid_writer.release()  # release previous video writer
+                                if isinstance(vid_writer, skvideo.io.FFmpegWriter):
+                                    vid_writer.close()  # release previous video writer
                                 if not os.path.isdir(Path(self.out) / "videos"):
                                     os.mkdir(Path(self.out) / "videos")
                                 nvid_path = str(
@@ -238,19 +240,22 @@ class KosterModel:
                                 fps = vid_cap.get(cv2.CAP_PROP_FPS)
                                 w = int(vid_cap.get(cv2.CAP_PROP_FRAME_WIDTH))
                                 h = int(vid_cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
-                                vid_writer = cv2.VideoWriter(
-                                    nvid_path,
-                                    cv2.VideoWriter_fourcc(*"h264"),
-                                    fps,
-                                    (w, h),
-                                )
-                            vid_writer.write(im0)
+                                width = 416
+                                r = width / float(w)
+                                dim = (width, int(h * r))
+                                vid_writer = skvideo.io.FFmpegWriter(
+                                        nvid_path, inputdict={'-r': str(fps), '-s':'{}x{}'.format(dim[0],dim[1])}, outputdict={'-r': str(fps), '-c:v': 'libx264', '-crf': '17', '-preset': 'ultrafast', '-pix_fmt': 'yuv444p'}) #,
+                                    #cv2.VideoWriter_fourcc(*"mp4v"),
+                                    #fps,
+                                    #(w, h),
+                                #)
+                            vid_writer.writeFrame(cv2.resize(cv2.cvtColor(im0, cv2.COLOR_RGB2BGR), dim, interpolation = cv2.INTER_AREA))
 
             i += 1
             perc_complete = i / len(dataset)
             my_bar.progress(perc_complete)
             if vid:
-                vid_writer.release()
+                vid_writer.close()
 
             if self.save_txt or self.save_img:
                 print("Results saved to %s" % os.getcwd() + os.sep + self.out)
@@ -259,7 +264,13 @@ class KosterModel:
 
             print("Done. (%.3fs)" % (time.time() - t0))
             if vid:
-                return open(nvid_path, "rb").read(), vid, detect_dict
+                #cvid_path = str(Path(self.out) / "videos" / ("conv_"+Path(p).name))
+                #width = 416
+                #r = width / float(w)
+                #dim = (width, int(h * r))
+                #os.system(f"ffmpeg -i '{nvid_path}' -vf scale={dim[0]}:{dim[1]} -vcodec libx264 '{cvid_path}'")
+                return nvid_path, vid, detect_dict
+            #open(nvid_path, "rb").read(), vid, detect_dict
             else:
                 # Compress image before transfer
                 width = 416
@@ -341,5 +352,6 @@ async def save_image(file_name: str, file_data=File(...)):
 async def save_video(file_name: str, fps: int, w: int, h: int, file_data=File(...)):
     if not os.path.isfile(f"{model.out}/{file_name}"):
         with open(f"{model.out}/{file_name}", "wb") as out_file:
-            out_file.write(file_data.file.read())
+            decompressed = zlib.decompress(file_data.file.read())
+            out_file.write(decompressed)
     return {"output": f"{model.out}/{file_name}"}
