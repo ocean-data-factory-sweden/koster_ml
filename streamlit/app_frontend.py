@@ -196,15 +196,10 @@ def run_the_app():
             name = img_file_buffer.name
             im = os.path.splitext(name)[1].lower() in [".png", ".jpg", ".jpeg"]
             # text_io = io.TextIOWrapper(img_file_buffer)
-            #raw_buffer = img_file_buffer.read()
+            # raw_buffer = img_file_buffer.read()
 
             if im:
                 try:
-                    # image = cv2.imdecode(np.fromstring(raw_buffer, np.uint8), -1)
-                    # Resize the image to the size YOLO model expects
-                    # selected_frame = image  # cv2.resize(image, (416, 416))
-                    # selected_frame = np.float32(image)
-                    # selected_frame = cv2.cvtColor(selected_frame, cv2.COLOR_BGR2RGB)
                     # Save in a temp file as YOLO expects filepath
                     selected_frame = save_image(f"{name}", img_file_buffer.read())
                 except:
@@ -212,6 +207,7 @@ def run_the_app():
 
             else:
                 video = True
+                # Save video to temp file
                 try:
                     with open(
                         f"temp_{name}", "wb"
@@ -223,7 +219,9 @@ def run_the_app():
                     w = int(vid_cap.get(cv2.CAP_PROP_FRAME_WIDTH))
                     h = int(vid_cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
                     assert fps > 0
-                    selected_frame = save_video(f"{name}", img_file_buffer.read(), fps, w, h)
+                    selected_frame = save_video(
+                        f"{name}", img_file_buffer.read(), fps, w, h
+                    )
                     os.remove(f"temp_{name}")
                 except:
                     selected_frame = f"/data/api/{name}"
@@ -235,6 +233,7 @@ def run_the_app():
 
     else:
         custom = False
+        # Display warning
         # st.error("This feature will allow you to explore our datasets. Please upload your own media until this becomes available. ")
         # Load classified data
         df = load_data()
@@ -256,8 +255,6 @@ def run_the_app():
             )
         selected_frame = np.float32(selected_frame)
         selected_frame = cv2.cvtColor(selected_frame, cv2.COLOR_RGB2BGR)
-        # selected_frame = cv2.cvtColor(selected_frame, cv2.COLOR_BGR2RGB)
-        # Save in a temp file as YOLO expects filepath
         mbase = os.path.basename(selected_movie_path).split(".")[0]
         cv2.imwrite(f"{mbase}_{selected_frame_number}.jpeg", selected_frame)
         with open(f"{mbase}_{selected_frame_number}.jpeg", "rb") as out_file:
@@ -278,9 +275,10 @@ def run_the_app():
             % (overlap_threshold, confidence_threshold)
         )
         st.video("".join(processed_image))
-        #st.video(bytes(list(processed_image)))
+        # If frontend and backend on same server do not send data unnecessarily
+        # st.video(bytes(list(processed_image)))
+        # Create download link for annotations
         st.markdown(get_table_download_link(detect_dict), unsafe_allow_html=True)
-        # os.remove(selected_frame)
     else:
         # Draw the header and image.
         st.header("Model Output")
@@ -288,14 +286,12 @@ def run_the_app():
             "**YOLO v3 Model** (overlap `%3.1f`) (confidence `%3.1f`)"
             % (overlap_threshold, confidence_threshold)
         )
-        # if not custom:
-        #    st.image(processed_image, use_column_width=True)
         st.image(
             cv2.cvtColor(np.float32(processed_image) / 255, cv2.COLOR_BGR2RGB),
             use_column_width=True,
         )
+        # Create download link for annotations
         st.markdown(get_table_download_link(detect_dict), unsafe_allow_html=True)
-        # os.remove(selected_frame)
 
 
 @st.cache(hash_funcs={np.ufunc: str})

@@ -235,8 +235,6 @@ class KosterModel:
                                 nvid_path = str(
                                     Path(self.out) / "videos" / Path(p).name
                                 )
-                                # extension = os.path.splitext(nvid_path)[1]
-                                # nvid_path = nvid_path.replace(extension, '.avi')
                                 fps = vid_cap.get(cv2.CAP_PROP_FPS)
                                 w = int(vid_cap.get(cv2.CAP_PROP_FRAME_WIDTH))
                                 h = int(vid_cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
@@ -244,12 +242,26 @@ class KosterModel:
                                 r = width / float(w)
                                 dim = (width, int(h * r))
                                 vid_writer = skvideo.io.FFmpegWriter(
-                                        nvid_path, inputdict={'-r': str(fps), '-s':'{}x{}'.format(dim[0],dim[1])}, outputdict={'-r': str(fps), '-c:v': 'libx264', '-crf': '17', '-preset': 'ultrafast', '-pix_fmt': 'yuv444p'}) #,
-                                    #cv2.VideoWriter_fourcc(*"mp4v"),
-                                    #fps,
-                                    #(w, h),
-                                #)
-                            vid_writer.writeFrame(cv2.resize(cv2.cvtColor(im0, cv2.COLOR_RGB2BGR), dim, interpolation = cv2.INTER_AREA))
+                                    nvid_path,
+                                    inputdict={
+                                        "-r": str(fps),
+                                        "-s": "{}x{}".format(dim[0], dim[1]),
+                                    },
+                                    outputdict={
+                                        "-r": str(fps),
+                                        "-c:v": "libx264",
+                                        "-crf": "17",
+                                        "-preset": "ultrafast",
+                                        "-pix_fmt": "yuv444p",
+                                    },
+                                )
+                            vid_writer.writeFrame(
+                                cv2.resize(
+                                    cv2.cvtColor(im0, cv2.COLOR_RGB2BGR),
+                                    dim,
+                                    interpolation=cv2.INTER_AREA,
+                                )
+                            )
 
             i += 1
             perc_complete = i / len(dataset)
@@ -264,13 +276,9 @@ class KosterModel:
 
             print("Done. (%.3fs)" % (time.time() - t0))
             if vid:
-                #cvid_path = str(Path(self.out) / "videos" / ("conv_"+Path(p).name))
-                #width = 416
-                #r = width / float(w)
-                #dim = (width, int(h * r))
-                #os.system(f"ffmpeg -i '{nvid_path}' -vf scale={dim[0]}:{dim[1]} -vcodec libx264 '{cvid_path}'")
+                # Return the path only if frontend and backend don't require transfers
                 return nvid_path, vid, detect_dict
-            #open(nvid_path, "rb").read(), vid, detect_dict
+            # open(nvid_path, "rb").read(), vid, detect_dict
             else:
                 # Compress image before transfer
                 width = 416
@@ -278,7 +286,7 @@ class KosterModel:
                 r = width / float(w)
                 dim = (width, int(h * r))
                 # resize the image
-                resized = cv2.resize(im0, dim, interpolation = cv2.INTER_AREA)
+                resized = cv2.resize(im0, dim, interpolation=cv2.INTER_AREA)
                 return resized, vid, detect_dict
 
 
