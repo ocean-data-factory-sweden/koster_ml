@@ -1,4 +1,4 @@
-classes = 1
-train  = /usr/src/app/data_dir/train.txt 
-valid  = /usr/src/app/data_dir/valid.txt
-names = data/koster.names
+classes = 4
+train  = /usr/src/app/data_dir/new_species_model_2/train.txt 
+valid  = /usr/src/app/data_dir/new_species_model_2/valid.txt
+names = /usr/src/app/data_dir/koster.names

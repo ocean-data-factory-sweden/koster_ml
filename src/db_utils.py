@@ -118,10 +118,11 @@ def unswedify(string):
             .replace(b"\xc3\xb6", b"o\xcc\x88")
             .decode("utf-8")
         )
-    elif b"a\xcc\x88" in string.encode("utf-8"):
+    elif b"a\xcc\x88" in string.encode("utf-8") or b"o\xcc\x88" in string.encode("utf-8"):
         return (
             string.encode("utf-8")
             .replace(b"a\xcc\x88", b"\xc3\xa4")
+            .replace(b"o\xcc\x88", b"\xc3\xb6")
             .decode("utf-8")
         )
     else:

@@ -1,5 +1,5 @@
 # module imports
-import os, json, argparse, glob, pims, random, shutil
+import os, re, json, argparse, glob, pims, random, shutil
 import pandas as pd
 import numpy as np
 import frame_tracker
@@ -12,12 +12,18 @@ from tqdm import tqdm
 from PIL import Image
 from db_utils import create_connection, unswedify
 from prepare_input import ProcFrameCuda, ProcFrames
+from species_dict import sp_id2mod_id
+
 
 # utility functions
 def process_frames(frames_path, size=(416, 416)):
     # Run tests
     gpu_time_0, n_frames = ProcFrames(partial(ProcFrameCuda, size=size), frames_path)
     print(f"Processing performance: {n_frames} frames, {gpu_time_0:.2f} ms/frame")
+
+
+def process_path(path):
+    return os.path.basename(re.split("_[0-9]+", path)[0]).replace("_frame", "") + ".mov"
 
 def split_frames(data_path, perc_test):
 
@@ -43,7 +49,7 @@ def split_frames(data_path, perc_test):
         if counter in test_array:
             file_test.write(pathAndFilename + "\n")
         else:
-            if random.uniform(0, 1) <= (1 - perc_test) / 2:
+            if random.uniform(0, 1) <= 0.5:
                 file_train.write(pathAndFilename + "\n")
             else:
                 file_valid.write(pathAndFilename + "\n")
@@ -109,7 +115,6 @@ def main():
     )
 
     args = parser.parse_args()
-
     conn = create_connection(args.db_path)
 
     if len(args.class_list) > 0:
@@ -147,7 +152,7 @@ def main():
         args.movie_dir
         + "/"
         + train_rows["filename"].apply(
-            lambda x: os.path.basename(x.rsplit("_frame_")[0]) + ".mov"
+            lambda x: process_path(x)
         )
     )
     
@@ -159,9 +164,7 @@ def main():
             try:
                 video_dict[unswedify(i)] = pims.Video(unswedify(i))
             except:
-                pass
-
-    #video_dict = {i: pims.Video(unswedify(i)) for i in train_rows["movie_path"].unique()}
+                print("Missing file", i)
 
     train_rows = train_rows[
         [
@@ -185,12 +188,13 @@ def main():
         named_tuple = tuple([filename, species_id, frame_number, movie_path])
 
         # Track intermediate frames
-        if name[3] in video_dict:
+        final_name = name[3] if name[3] in video_dict else unswedify(name[3])
+        if final_name in video_dict:
             bboxes[named_tuple], tboxes[named_tuple] = [], []
             bboxes[named_tuple].extend(tuple(i[4:]) for i in group.values)
             tboxes[named_tuple].extend(
                 frame_tracker.track_objects(
-                    video_dict[name[3]],
+                    video_dict[final_name],
                     species_id,
                     bboxes[named_tuple],
                     frame_number,
@@ -205,8 +209,8 @@ def main():
                         species_id,
                         frame_number,
                         movie_path,
-                        video_dict[name[3]][frame_number].shape[1],
-                        video_dict[name[3]][frame_number].shape[0],
+                        video_dict[final_name][frame_number].shape[1],
+                        video_dict[final_name][frame_number].shape[0],
                     )
                     + box
                 )
@@ -218,8 +222,8 @@ def main():
                         species_id,
                         frame_number + box[0],
                         movie_path,
-                        video_dict[name[3]][frame_number].shape[1],
-                        video_dict[name[3]][frame_number].shape[0],
+                        video_dict[final_name][frame_number].shape[1],
+                        video_dict[final_name][frame_number].shape[0],
                     )
                     + box[1:]
                 )
@@ -269,7 +273,7 @@ def main():
                 "\n".join(
                     [
                         "{} {:.6f} {:.6f} {:.6f} {:.6f}".format(
-                            0 if len(args.class_list) == 1 else i[1],  # single class vs multiple classes
+                            0 if len(args.class_list) == 1 else sp_id2mod_id[i[1]],  # single class vs multiple classes
                             min((i[6] + i[8] / 2) / i[4], 1.0),
                             min((i[7] + i[9] / 2) / i[5], 1.0),
                             min(i[8] / i[4], 1.0),
@@ -281,8 +285,9 @@ def main():
             )
 
         # Save frames to image files
-        if name[2] in video_dict:
-            Image.fromarray(video_dict[name[2]][name[1]][:, :, [2, 1, 0]]).save(
+        save_name = name[2] if name[2] in video_dict else unswedify(name[2])
+        if save_name in video_dict:
+            Image.fromarray(video_dict[save_name][name[1]][:, :, [2, 1, 0]]).save(
                 f"{args.out_path}/images/{file_base}_frame_{name[1]}.jpg"
             )
 
