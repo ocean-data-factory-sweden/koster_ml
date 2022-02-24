@@ -9,27 +9,23 @@ from PIL import Image
 
 # Set app config
 st.set_page_config(
-    page_title="Koster Object Detector App", page_icon="assets/favicon-16x16.png"
+    page_title="Koster Seafloor Detector App", page_icon="assets/favicon-16x16.png"
 )
 
 # Fix style issues
 hide_streamlit_style = """
             <style>
-            footer {
-
-	visibility: hidden;
-
-	}
-footer:after {
-	content:'Powered by Combine';
-	visibility: visible;
-	display: block;
-	position: relative;
-	#background-color: red;
-	padding: 5px;
-	top: 2px;
+.footer {
+position: fixed;
+left: 0;
+bottom: 0;
+width: 100%;
+text-align: center;
 }
-            .css-1tdez3t {
+footer {
+    visibility: hidden;
+    }
+.css-1l02zno {
     background-attachment: fixed;
     box-sizing: border-box;
     flex-shrink: 0;
@@ -40,9 +36,13 @@ footer:after {
     transition: margin-left .3s,box-shadow .3s;
     width: 21rem;
     z-index: 100;
+
 }
-            </style>
-            """
+</style>
+<div class="footer">
+<p>Powered by <a style='display: block; text-align: center;' href="https://www.combine.se/" target="_blank">Combine</a></p>
+</div>
+"""
 st.markdown(hide_streamlit_style, unsafe_allow_html=True)
 
 # Disable automatic encoding warning for uploaded files
@@ -51,10 +51,9 @@ st.set_option("deprecation.showfileUploaderEncoding", False)
 # interact with FastAPI endpoint
 backend = "http://fastapi:5000"
 
-
 def main():
     # Set up appearance of sidebar
-    st.sidebar.header("Koster Lab - Deep Sea Coral Detection")
+    st.sidebar.header("Koster Seafloor Detector")
     st.sidebar.image(
         "https://panoptes-uploads.zooniverse.org/production/project_avatar/86c23ca7-bbaa-4e84-8d8a-876819551431.png",
         use_column_width=True,
@@ -172,23 +171,53 @@ def get_table_download_link(json_dict):
 def run_the_app():
     # Draw the UI element to select parameters for the YOLO object detector.
     confidence_threshold, overlap_threshold = object_detector_ui()
-    # st.markdown(
-    #    "Instructions: Use the sliders to adjust the model hyperparameters and wait to see the impact on the predicted bounding boxes."
-    # )
+    st.header("Welcome to our underwater *world!* :fish:")
+    st.subheader("Here is a quick FAQ to get you started.")
 
-    # Default is to load images
-    if st.sidebar.checkbox("Custom File Upload", value=True):
-
-        custom = True
-        with st.beta_expander("Click to read disclaimer"):
-            st.warning(
-                "Disclaimer: By uploading your files here, you also accept that any uploaded files will be processed on an external server located within the EU. \
+    with st.beta_expander("What is the Koster Seafloor Detector?"):
+            st.info(
+                "Originally developed in collaboration between ODF, SEAnalytics, Wildlife.ai and the University of Gothenburg, the Koster Seafloor Detector is an object detection tool for different species in subsea images/videos. \
+                The model is based on an open-source implementation of a popular single-shot object detection architecture, YOLO. The model is trained on footage from the protected Koster Marine Park on the west coast of Sweden. "
+            )
+            st.image("https://panoptes-uploads.zooniverse.org/production/project_attached_image/e4794aff-ebb5-4a59-9b8a-91c52bc8dede.jpeg")
+    with st.beta_expander("How do I use this?"):
+            st.info(
+                "The easiest way is to look through footage that has already been classified. Start by clicking on the tickbox in the side bar called 'Custom File Upload' and you should see an \
+                image with a bounding box containing a name and confidence level. There you should now see sidebar options to filter by movie and movie frame. \
+                In the sidebar, you can now adjust the confidence and overlap thresholds to see how this impacts the output of the model. \
+                Once you get the hang of it, start uploading your own custom footage by clicking on the tickbox again. Click on 'Browse files' and add an image/video from your own computer and wait to see the model output." 
+            )
+    with st.beta_expander("Which species are currently supported?"):
+            st.info(
+                "In this version, we currently support four marine classes. These are deep sea corals, deeplet sea anemones, football sponges and fish (general). This is continuously updated and the performance across these \
+                groups may not be equal due to the differences in the available volume of footage for each class."
+            )
+    with st.beta_expander("I don't see any bounding boxes anywhere, what can I do?"):
+            st.info(
+                "There are multiple possible reasons for a lack of bounding boxes. For example, the environment in your footage may be too different from what our model expects. However, \
+                a good starting point is to decrease the confidence threshold to see if this results in the appearance of bounding boxes. "
+            )
+    with st.beta_expander("What happens to my footage when I upload it here? Can I get it removed?"):
+            st.info(
+                "By uploading your files here, you also accept that any uploaded files will be processed on an external server located within the EU. \
             You also accept that these files may be stored and used for training purposes in future model iterations. At your request, any data provided will be removed from our servers \
             in accordance with prevailing GDPR regulations."
             )
+    with st.beta_expander("I want the app to be even better, is there a way I can contribute to the model training?"):
+            st.info(
+                "Thank-you for your interest in improving our model. We are of course open to any questions, feedback or suggestions, which you may forward to jurie.germishuys@combine.se. You can also contribute by annotating footage for \
+                future iterations on our citizen science project page https://www.zooniverse.org/projects/victorav/the-koster-seafloor-observatory."
+            )
+    
+     
 
+    # Default is to load images
+    if st.sidebar.checkbox("Custom File Upload", value=True):
+        custom = True
+        st.empty()
+        st.subheader("Upload footage")
         img_file_buffer = st.file_uploader(
-            "Upload an image/video (maximum size 1GB). Supported formats: png, jpg, jpeg, mov, mp4. Instructions: Use the sliders to adjust the model hyperparameters and wait to see the impact on the predicted bounding boxes.",
+            "Upload an image/video (maximum size 1GB). Supported formats: png, jpg, jpeg, mov, mp4.",
             type=["png", "jpg", "jpeg", "mov", "mp4"],
         )
 
@@ -196,32 +225,34 @@ def run_the_app():
             name = img_file_buffer.name
             im = os.path.splitext(name)[1].lower() in [".png", ".jpg", ".jpeg"]
             # text_io = io.TextIOWrapper(img_file_buffer)
-            # raw_buffer = img_file_buffer.read()
+            raw_buffer = img_file_buffer.read()
 
             if im:
                 try:
+                    # image = cv2.imdecode(np.fromstring(raw_buffer, np.uint8), -1)
+                    # Resize the image to the size YOLO model expects
+                    # selected_frame = image  # cv2.resize(image, (416, 416))
+                    # selected_frame = np.float32(image)
+                    # selected_frame = cv2.cvtColor(selected_frame, cv2.COLOR_BGR2RGB)
                     # Save in a temp file as YOLO expects filepath
-                    selected_frame = save_image(f"{name}", img_file_buffer.read())
+                    selected_frame = save_image(f"{name}", raw_buffer)
                 except:
                     selected_frame = f"/data/api/{name}"
 
             else:
                 video = True
-                # Save video to temp file
                 try:
                     with open(
                         f"temp_{name}", "wb"
                     ) as out_file:  # open for [w]riting as [b]inary
-                        out_file.write(img_file_buffer.read())
+                        out_file.write(raw_buffer)
 
                     vid_cap = cv2.VideoCapture(f"temp_{name}")
                     fps = int(vid_cap.get(cv2.CAP_PROP_FPS))
                     w = int(vid_cap.get(cv2.CAP_PROP_FRAME_WIDTH))
                     h = int(vid_cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
                     assert fps > 0
-                    selected_frame = save_video(
-                        f"{name}", img_file_buffer.read(), fps, w, h
-                    )
+                    selected_frame = save_video(f"{name}", raw_buffer, fps, w, h)
                     os.remove(f"temp_{name}")
                 except:
                     selected_frame = f"/data/api/{name}"
@@ -233,7 +264,6 @@ def run_the_app():
 
     else:
         custom = False
-        # Display warning
         # st.error("This feature will allow you to explore our datasets. Please upload your own media until this becomes available. ")
         # Load classified data
         df = load_data()
@@ -255,6 +285,8 @@ def run_the_app():
             )
         selected_frame = np.float32(selected_frame)
         selected_frame = cv2.cvtColor(selected_frame, cv2.COLOR_RGB2BGR)
+        # selected_frame = cv2.cvtColor(selected_frame, cv2.COLOR_BGR2RGB)
+        # Save in a temp file as YOLO expects filepath
         mbase = os.path.basename(selected_movie_path).split(".")[0]
         cv2.imwrite(f"{mbase}_{selected_frame_number}.jpeg", selected_frame)
         with open(f"{mbase}_{selected_frame_number}.jpeg", "rb") as out_file:
@@ -275,23 +307,24 @@ def run_the_app():
             % (overlap_threshold, confidence_threshold)
         )
         st.video("".join(processed_image))
-        # If frontend and backend on same server do not send data unnecessarily
-        # st.video(bytes(list(processed_image)))
-        # Create download link for annotations
+        #st.video(bytes(list(processed_image)))
         st.markdown(get_table_download_link(detect_dict), unsafe_allow_html=True)
+        # os.remove(selected_frame)
     else:
         # Draw the header and image.
-        st.header("Model Output")
+        st.subheader("Model Output")
         st.markdown(
             "**YOLO v3 Model** (overlap `%3.1f`) (confidence `%3.1f`)"
             % (overlap_threshold, confidence_threshold)
         )
+        # if not custom:
+        #    st.image(processed_image, use_column_width=True)
         st.image(
             cv2.cvtColor(np.float32(processed_image) / 255, cv2.COLOR_BGR2RGB),
             use_column_width=True,
         )
-        # Create download link for annotations
         st.markdown(get_table_download_link(detect_dict), unsafe_allow_html=True)
+        # os.remove(selected_frame)
 
 
 @st.cache(hash_funcs={np.ufunc: str})

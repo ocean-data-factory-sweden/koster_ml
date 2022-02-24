@@ -128,7 +128,11 @@ def unswedify(string):
     else:
         return string
 
-
+def clean_species_name(string):
+    """Remove whitespace and non-alphanumeric characters from species string"""
+    string = string.replace(" ", "_")
+    string = ''.join([x.lower() for x in string if x.isalpha() or x in ["_"]])
+    return string
 
 def download_csv_from_google_drive(file_url):
 
